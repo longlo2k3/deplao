@@ -4,7 +4,7 @@ import { useAppStore, LabelData } from '@/store/appStore';
 import { useChatStore } from '@/store/chatStore';
 import DataAccessor from '@/lib/data/DataAccessor';
 import ipc, { buildZaloAuth } from '@/lib/ipc';
-import { CHANNEL, isZalo } from '@/lib/channelHelper';
+import { CHANNEL, isZalo, getFriendlyUserName } from '@/lib/channelHelper';
 import { getAdapter } from '@/lib/adapters/registry';
 
 // Cache TTL: 12 hour
@@ -318,7 +318,7 @@ export function CreateGroupModal({ onClose, onCreated, preSelected }: {
   );
 
   const recentContacts = accountContacts
-    .filter(c => c.contact_type !== 'group' && matchFilter(c.alias || c.display_name || c.contact_id, c.phone || '', c.contact_id))
+    .filter(c => c.contact_type !== 'group' && matchFilter(c.alias || c.display_name || getFriendlyUserName(c.channel), c.phone || '', c.contact_id))
     .slice(0, 8);
 
   const recentIds = new Set(recentContacts.map(c => c.contact_id));
@@ -434,7 +434,7 @@ export function CreateGroupModal({ onClose, onCreated, preSelected }: {
                 <div>
                   <p className="px-4 py-2 text-xs text-gray-400 font-medium uppercase tracking-wide">Trò chuyện gần đây</p>
                   {recentContacts.map(c => (
-                    <PersonRow key={c.contact_id} id={c.contact_id} name={c.alias || c.display_name || c.contact_id}
+                    <PersonRow key={c.contact_id} id={c.contact_id} name={c.alias || c.display_name || getFriendlyUserName(c.channel)}
                       avatar={c.avatar_url} subtitle={c.phone || undefined}
                       selected={selected.has(c.contact_id)} onToggle={() => toggleSelect(c.contact_id)} />
                   ))}
@@ -647,7 +647,7 @@ export function SendCardModal({ threadId, threadType, onClose }: {
   );
 
   const recentContacts = accountContacts
-    .filter(c => c.contact_type !== 'group' && matchFilter(c.alias || c.display_name || c.contact_id, c.phone || '', c.contact_id))
+    .filter(c => c.contact_type !== 'group' && matchFilter(c.alias || c.display_name || getFriendlyUserName(c.channel), c.phone || '', c.contact_id))
     .slice(0, 8);
 
   const recentIds = new Set(recentContacts.map(c => c.contact_id));
@@ -749,7 +749,7 @@ export function SendCardModal({ threadId, threadType, onClose }: {
                   <p className="px-4 py-2 text-xs text-gray-400 font-medium uppercase tracking-wide">Trò chuyện gần đây</p>
                   {recentContacts.map(c => (
                     <PersonRow key={c.contact_id} id={c.contact_id}
-                      name={c.alias || c.display_name || c.contact_id}
+                      name={c.alias || c.display_name || getFriendlyUserName(c.channel)}
                       avatar={c.avatar_url}
                       subtitle={c.phone || undefined}
                       selected={selected.has(c.contact_id)}

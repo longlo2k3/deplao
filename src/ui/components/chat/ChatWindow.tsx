@@ -2770,15 +2770,6 @@ export default function ChatWindow() {
 
           const isRecalled = msg.is_recalled === 1 || msg.status === 'recalled' || msg.msg_type === 'recalled';
 
-          // TEMP-DIAG: group sender name resolution
-          if (showSenderName) {
-            console.log(`[MSGNAME] group senderId=${msg.sender_id} contactDisp=${contactName} gmDisp=${groupMember?.displayName || ''} sender_name=${msg.sender_name || ''} final=${displayName}`);
-          }
-          // TEMP-DIAG: ordering evidence for every rendered row (last 6)
-          if (idx >= msgs.length - 6) {
-            console.log(`[MSGORDER] RENDER idx=${idx} id=${msg.msg_id} ts=${msg.timestamp} seq=${msg.send_seq ?? 'nil'} isSent=${isSent ? 1 : 0} prevTs=${prevMsg?.timestamp ?? '-'} prevId=${prevMsg?.msg_id ?? '-'}`);
-          }
-
           // ── Recalled message - dùng RecalledBubble chung với MessageBubbles ─
           if (isRecalled) {
             const isRevealed = revealedRecallIds.has(msg.msg_id);

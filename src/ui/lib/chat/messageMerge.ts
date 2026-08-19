@@ -109,8 +109,6 @@ export function mergeMessage(existing: MessageItem[], message: MessageItem): Mes
     if (matchedByRealId) {
       filtered = existing.filter((m) => m !== matchedByRealId);
       replacement = inheritTempOrdering(message, matchedByRealId);
-      // TEMP-DIAG: real echo matched by real_msg_id
-      console.log(`[MSGORDER] REAL-byRealId msgId=${incomingMsgId} tempSeq=${matchedByRealId.send_seq} tempTs=${matchedByRealId.timestamp} newTs=${message.timestamp}`);
     } else {
       // Strategy 2 (fallback): match bằng content — chỉ xoá 1 temp khớp ĐẦU TIÊN
       const matchIdx = existing.findIndex(
@@ -120,11 +118,6 @@ export function mergeMessage(existing: MessageItem[], message: MessageItem): Mes
         const matchedTemp = existing[matchIdx];
         filtered = existing.filter((_, i) => i !== matchIdx);
         replacement = inheritTempOrdering(message, matchedTemp);
-        // TEMP-DIAG: real echo matched by content (may be ambiguous for identical text)
-        console.log(`[MSGORDER] REAL-byContent msgId=${incomingMsgId} tempIdx=${matchIdx} tempSeq=${matchedTemp.send_seq} tempTs=${matchedTemp.timestamp} newTs=${message.timestamp} tempCount=${existing.filter(m => m.msg_id?.startsWith?.('temp_')).length}`);
-      } else {
-        // TEMP-DIAG: real echo NOT matched → append + res-sort
-        console.log(`[MSGORDER] REAL-NOT-MATCHED msgId=${incomingMsgId} ts=${message.timestamp} pendingTemps=${existing.filter(m => m.msg_id?.startsWith?.('temp_') && m.is_sent === 1).length}`);
       }
     }
   }

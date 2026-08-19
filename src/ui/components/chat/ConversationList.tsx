@@ -24,7 +24,7 @@ import { getCapability, channelSupports, getChannelLabel, type Channel } from '@
 import { extractUserProfile } from '../../../utils/profileUtils';
 import { refreshContactAlias } from '../../hooks/useZaloEvents';
 import PageLoading from '@/components/common/PageLoading';
-import { CHANNEL, isZalo, isNonZalo, isTelegramUser } from '@/lib/channelHelper';
+import { CHANNEL, isZalo, isNonZalo, isTelegramUser, getFriendlyUserName } from '@/lib/channelHelper';
 import ForumTopicsPanel from './ForumTopicsPanel';
 
 interface LabelData { id: number; text: string; color: string; emoji: string; conversations: string[]; textKey?: string; offset?: number; createTime?: number; }
@@ -2442,6 +2442,9 @@ export default function ConversationList() {
             .filter(Boolean) as LocalLabelData[];
           // Badge tài khoản sở hữu (chỉ trong chế độ Gộp trang)
           const ownerAcc = mergedInboxMode ? allAccountsList.find(a => a.zalo_id === contact.owner_zalo_id) : null;
+          // Tên hiển thị: ưu tiên alias/display_name; tránh hiện raw contact_id (UUID) khi contact mới chưa có tên
+          const convoName = contact.alias || contact.display_name ||
+            (isGroupC ? 'Nhóm mới' : getFriendlyUserName(contact.channel || ownerAcc?.channel || CHANNEL.ZALO));
           return (
             <div key={`${contact.owner_zalo_id}_${contact.contact_id}`}
               className={`relative w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-600 transition-colors cursor-pointer ${threadLocalLabelsArr.length > 0 ? 'min-h-[72px]' : 'max-h-[80px] min-h-[80px]'} ${activeThreadId === contact.contact_id && activeAccountId === contact.owner_zalo_id ? 'bg-gray-600' : ''}`}
@@ -2453,7 +2456,7 @@ export default function ConversationList() {
                   <GroupAvatar
                     avatarUrl={contact.avatar_url}
                     groupInfo={(groupInfoCache[contact.owner_zalo_id] || {})[contact.contact_id]}
-                    name={contact.alias || contact.display_name}
+                    name={contact.alias || contact.display_name || convoName}
                     size="md"
                   />
                 ) : contact.avatar_url && !failedAvatars.has(contact.contact_id) ? (
@@ -2474,7 +2477,7 @@ export default function ConversationList() {
                       }
                     }} />
                 ) : (
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold bg-blue-600">{(contact.alias || contact.display_name).charAt(0).toUpperCase()}</div>
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold bg-blue-600">{(contact.alias || contact.display_name || 'U').charAt(0).toUpperCase()}</div>
                 )}
                 {/* Badge tài khoản - chỉ hiện trong chế độ Gộp trang */}
                 {mergedInboxMode && ownerAcc && (
@@ -2497,7 +2500,7 @@ export default function ConversationList() {
                   <span className="text-sm font-medium text-gray-200 truncate flex items-center gap-1">
                     {isLocalPinned && <span title="Ghim trong app">📍</span>}
                     {isPinned && <span title="Ghim Zalo"><PinIcon className="w-4 h-4" /></span>}
-                    {contact.alias || contact.display_name || contact.contact_id}
+                    {convoName}
                   </span>
                   {/* Fixed-width slot: always reserve space to prevent layout shift on hover */}
                   <div className="flex-shrink-0 w-14 flex items-center justify-end gap-1">

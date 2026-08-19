@@ -4,7 +4,7 @@ import { useAccountStore } from '@/store/accountStore';
 import DataAccessor from '@/lib/data/DataAccessor';
 import GroupAvatar from '../common/GroupAvatar';
 import { HardDriveIcon, CloudIcon } from '@/components/common/icons';
-import { CHANNEL } from '@/lib/channelHelper';
+import { CHANNEL, getFriendlyUserName } from '@/lib/channelHelper';
 import { formatMsgTime } from '@/lib/chat/messageParser';
 
 export default function ForwardMessageModal({ messages, contacts, onClose, onForward }: {
@@ -296,7 +296,7 @@ export default function ForwardMessageModal({ messages, contacts, onClose, onFor
                   <GroupAvatar
                     avatarUrl={c.avatar_url}
                     groupInfo={grpCache[c.contact_id]}
-                    name={c.display_name || c.contact_id}
+                    name={c.display_name || (c.contact_type === 'group' ? 'Nhóm mới' : getFriendlyUserName(c.channel))}
                     size="md"
                   />
                 ) : c.avatar_url ? (
@@ -308,7 +308,7 @@ export default function ForwardMessageModal({ messages, contacts, onClose, onFor
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-200 truncate">{c.alias || c.display_name || c.contact_id}
+                  <p className="text-sm text-gray-200 truncate">{c.alias || c.display_name || (c.contact_type === 'group' ? 'Nhóm mới' : getFriendlyUserName(c.channel))}
                     {c.alias && c.display_name && <span className="text-xs text-gray-400 ml-1">({c.display_name})</span>}</p>
                   {c.contact_type === 'group'
                     ? <p className="text-xs text-gray-400">Nhóm</p>

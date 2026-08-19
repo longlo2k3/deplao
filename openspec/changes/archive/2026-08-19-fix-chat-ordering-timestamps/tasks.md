@@ -41,5 +41,16 @@
 - [x] `npx tsc -p tsconfig.json --noEmit` — 0 lỗi (fix kèm lỗi có sẵn `GlobalSearchPanel.tsx` thiếu import type `Channel`)
 - [x] `tsc -p tsconfig.electron.json --noEmit` — 0 lỗi
 - [x] `npx jest` — 11/11 PASS
-- [ ] User test UI: gửi nhanh 3 tin → đúng thứ tự; timestamp chỉ hiện khi gap ≥ 5 phút; group vẫn hiện tên người gửi
+- [x] User test UI + runtime evidence (log `deplao-dev.log`):
+  - FB burst "hi/A/B/C": thứ tự đúng trên RENDER (pos 14→17), echo in-place giữ `send_seq` + vị trí; DB trả newest-first, ConversationList `.reverse()` + ChatWindow giữ thứ tự chuẩn
+  - Zalo 19 echo: khớp Strategy 1 `real_msg_id`, kế thừa `tempTs` client — thứ tự đúng
+  - Bug tên (bước 2): contact mới chưa có `display_name` → sidebar hiện raw `contact_id` (UUID) + badge tài khoản sale trong Gộp trang → **đã fix tại T8**
 - [ ] Cập nhật `progress.md` + archive change
+
+## 8. Fix hiển thị tên contact chưa có display_name (phát hiện khi verify)
+
+- [x] File: `src/ui/components/chat/ConversationList.tsx` (import `getFriendlyUserName`; `convoName` fallback: group → "Nhóm mới", user → `getFriendlyUserName(channel)`; avatar fallback chữ "U")
+- [x] File: `src/ui/components/chat/ForwardMessageModal.tsx`, `GroupModals.tsx` — fallback `getFriendlyUserName(c.channel)` thay `c.contact_id`
+- [x] Acceptance: không còn hiển thị raw contact_id/UUID làm tên hội thoại; header đã fallback đúng từ trước
+- [x] Test: tsc EXIT 0; jest 11/11 PASS
+- [x] Gỡ toàn bộ TEMP-DIAG log sau khi chẩn đoán xong

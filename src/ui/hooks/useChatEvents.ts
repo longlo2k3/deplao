@@ -193,8 +193,6 @@ export function useChatEvents(): void {
         if (tempIdx >= 0) {
           // Replace temp with real message, preserve localPath from temp attachments
           const tempMsg = existing[tempIdx];
-          // TEMP-DIAG: FB in-place self replace
-          console.log(`[MSGORDER] FB-self-inplace msgId=${normalized.msg_id} tempIdx=${tempIdx} tempSeq=${tempMsg.send_seq} tempTs=${tempMsg.timestamp} newTs=${normalized.timestamp}`);
           let mergedAttachments = normalized.attachments;
           try {
             const tempAtts = JSON.parse(tempMsg.attachments || '[]');

@@ -7,32 +7,17 @@
 | 2026-08-18 | ✅ Spec | OpenSpec change `fix-chat-ordering-timestamps` (2 capabilities: outgoing-order, timestamp-gap), user confirmed (Gate G1) |
 | 2026-08-18 | ✅ Planning | task_plan.md + findings.md + progress.md tạo xong (Gate G2) |
 | 2026-08-18 | ✅ Implementation | T1-T6 xong, TDD đủ (libtest messageMerge 11/11), tsc 0 lỗi |
-| 2026-08-18 | 🔄 Verify | chờ user test UI trên app dev |
-
-## T1. MessageItem.send_seq + gán seq cho temp
-- **Trạng thái**: ✅ done
-- **Verification evidence**: `MessageItem.send_seq?: number` (chatStore ~119); module counter `nextSendSeq`; `assignSendSeq` gán seq cho outgoing temp (test 3 case PASS)
-
-## T2. Sort comparator (timestamp, send_seq)
-- **Trạng thái**: ✅ done
-- **Verification evidence**: `sortMessages` trong `src/ui/lib/chat/messageMerge.ts`; dùng ở `addMessage` + `prependMessages` (test 3 case PASS)
-
-## T3. Self-dedup: kế thừa ordering + chỉ xoá 1 temp
-- **Trạng thái**: ✅ done
-- **Verification evidence**: `mergeMessage` pure — real echo kế thừa send_seq + ts client từ temp (Strategy 1 real_msg_id, Strategy 2 content chỉ xoá 1 temp đầu); echo ngược thứ tự vẫn đúng (test 5 case PASS). Bonus: no-op duplicate trả `state` như cũ (tránh re-render thừa).
-
-## T4. Export MSG_TIME_GAP_MS
-- **Trạng thái**: ✅ done
-- **Verification evidence**: `messageParser.ts` export `MSG_TIME_GAP_MS = 5 * 60 * 1000`; import OK
-
-## T5. ChatWindow: tách showTime / showSenderName
-- **Trạng thái**: ✅ done, 🔄 chờ user test UI
-- **Verification evidence**: `showTime = !prevMsg || gap >= MSG_TIME_GAP_MS` (bỏ sender-change); `showSenderName` riêng (đổi sender || gap) dùng ở group-name (2996); import hằng số chung
-
-## T6. QuickChatModal dùng hằng số chung
-- **Trạng thái**: ✅ done
-- **Verification evidence**: package-shared `MSG_TIME_GAP_MS`, bỏ inline `5 * 60 * 1000`; hành vi không đổi
+| 2026-08-19 | ✅ Debug by evidence | Runtime log xác nhận ordering đúng (FB burst + Zalo echo); tìm root cause bug tên → raw contact_id làm tên sidebar |
+| 2026-08-19 | ✅ Verify | Fix T8 (name display) + gỡ TEMP-DIAG; tsc EXIT 0; jest 11/11 PASS |
+| 2026-08-19 | ✅ Build | `production` → `Deplao-Setup-26.8.3.exe` (165.8 MB) tại `dist-electron-build/` |
 
 ## T7. Verify toàn diện + archive
-- **Trạng thái**: 🔄 chờ UI test + archive
-- **Verification evidence**: `tsc -p tsconfig.json --noEmit` EXIT 0 (fix kèm lỗi có sẵn GlobalSearchPanel thiếu import type `Channel`); `tsc -p tsconfig.electron.json --noEmit` EXIT 0; `npx jest` 11/11 PASS (2026-08-18)
+- **Trạng thái**: ✅ done (evidence runtime)
+- **Verification evidence**: thêm TEMP-DIAG (messageMerge, useChatEvents, ChatWindow, ChatHeader) + `ELECTRON_ENABLE_LOGGING=1`, user reproduce → log chứng minh:
+  - **Ordering FB**: 4 tin "hi/A/B/C" → temp `seq 0..3`; echo in-place giữ vị trí 14→17 + giữ send_seq; RENDER cuối Chuẩn; reload DB trả newest-first, `.reverse()` + ChatWindow sort đúng
+  - **Ordering Zalo**: 19 echo khớp `REAL-byRealId`, kế thừa `tempTs` (client ms) — thứ tự đúng
+  - **Bug tên**: Header fallback đúng ("Người dùng Facebook"); SIDEBAR hiện raw contact_id khi display_name rỗng → root cause
+
+## T8. Fix hiển thị tên contact chưa có display_name
+- **Trạng thái**: ✅ done
+- **Verification evidence**: `ConversationList` `convoName` fallback (`getFriendlyUserName` / "Nhóm mới"), avatar 'U'; `ForwardMessageModal` + `GroupModals` fallback `getFriendlyUserName(c.channel)` thay c.contact_id; header đã đúng từ trước. tsc EXIT 0; jest 11/11 PASS; TEMP-DIAG đã gỡ.
