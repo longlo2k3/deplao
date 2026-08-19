@@ -7,16 +7,16 @@
 ### **Phần mềm Desktop quản lý đa tài khoản Zalo, Facebook & Telegram**
 **Tích hợp CRM · MARKETING · ERP · POS · WORKFLOW · TRỢ LÝ AI — Vận hành tập trung trong 1 ứng dụng duy nhất**
 
-[🌐 Website Chính Thức](https://deplaoapp.com/) &nbsp;•&nbsp; [🇬🇧 English Version](./README.en.md) &nbsp;•&nbsp; [💬 Báo Lỗi / Góp Ý](https://github.com/babyvibe/deplao-builder/issues)
+[🌐 Website Chính Thức](https://deplaoapp.com/) &nbsp;•&nbsp; [🇬🇧 English Version](./README.en.md) &nbsp;•&nbsp; [💬 Báo Lỗi / Góp Ý](https://github.com/longlo2k3/deplao/issues)
 
 <br/>
 
-[![Version](https://img.shields.io/badge/version-26.8.3-22c55e?style=for-the-badge&logo=github)](https://github.com/babyvibe/deplao-builder/releases)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-3b82f6?style=for-the-badge)](https://github.com/babyvibe/deplao-builder/releases)
+[![Version](https://img.shields.io/badge/version-26.8.4-22c55e?style=for-the-badge&logo=github)](https://github.com/longlo2k3/deplao/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-3b82f6?style=for-the-badge)](https://github.com/longlo2k3/deplao/releases)
 [![Electron](https://img.shields.io/badge/Electron-v41-47848f?style=for-the-badge&logo=electron&logoColor=white)](https://www.electronjs.org/)
 [![React](https://img.shields.io/badge/React-v18-61dafb?style=for-the-badge&logo=react&logoColor=white)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-v5-3178c6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![License](https://img.shields.io/github/license/babyvibe/deplao-builder?style=for-the-badge&color=orange)](./LICENSE)
+[![License](https://img.shields.io/github/license/longlo2k3/deplao?style=for-the-badge&color=orange)](./LICENSE)
 
 <br/>
 
@@ -40,36 +40,36 @@
 <table>
   <tr>
     <td align="center" width="50%">
-      <a href="https://github.com/babyvibe/deplao-builder/releases/latest/download/Deplao-Setup-26.8.3.exe">
-        <img src="https://img.shields.io/badge/🪟_Windows_10/11-v26.8.3-0078d4?style=for-the-badge&logo=windows&logoColor=white" alt="Download Windows" /><br/>
-        <sub><strong>Deplao-Setup-26.8.3.exe</strong></sub>
+      <a href="https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-Setup-26.8.4.exe">
+        <img src="https://img.shields.io/badge/🪟_Windows_10/11-v26.8.4-0078d4?style=for-the-badge&logo=windows&logoColor=white" alt="Download Windows" /><br/>
+        <sub><strong>Deplao-Setup-26.8.4.exe</strong></sub>
       </a>
     </td>
     <td align="center" width="50%">
-      <a href="https://github.com/babyvibe/deplao-builder/releases/latest/download/Deplao-26.8.3-arm64.dmg">
-        <img src="https://img.shields.io/badge/🍎_macOS_Apple_Silicon-v26.8.3-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download macOS Apple Silicon" /><br/>
-        <sub><strong>Deplao-26.8.3-arm64.dmg</strong> (M1 / M2 / M3 / M4)</sub>
+      <a href="https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-26.8.4-arm64.dmg">
+        <img src="https://img.shields.io/badge/🍎_macOS_Apple_Silicon-v26.8.4-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download macOS Apple Silicon" /><br/>
+        <sub><strong>Deplao-26.8.4-arm64.dmg</strong> (M1 / M2 / M3 / M4)</sub>
       </a>
     </td>
   </tr>
   <tr>
     <td align="center" width="50%">
-      <a href="https://github.com/babyvibe/deplao-builder/releases/latest/download/Deplao-26.8.3.AppImage">
-        <img src="https://img.shields.io/badge/🐧_Ubuntu_Linux-v26.8.3-e95420?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Download Ubuntu Linux" /><br/>
-        <sub><strong>Deplao-26.8.3.AppImage</strong> (Mọi Distro Linux)</sub>
+      <a href="https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-26.8.4.AppImage">
+        <img src="https://img.shields.io/badge/🐧_Ubuntu_Linux-v26.8.4-e95420?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Download Ubuntu Linux" /><br/>
+        <sub><strong>Deplao-26.8.4.AppImage</strong> (Mọi Distro Linux)</sub>
       </a>
     </td>
     <td align="center" width="50%">
-      <a href="https://github.com/babyvibe/deplao-builder/releases/latest/download/Deplao-26.8.3.dmg">
-        <img src="https://img.shields.io/badge/🍎_macOS_Intel-v26.8.3-555555?style=for-the-badge&logo=apple&logoColor=white" alt="Download macOS Intel" /><br/>
-        <sub><strong>Deplao-26.8.3.dmg</strong> (Chip Intel)</sub>
+      <a href="https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-26.8.4.dmg">
+        <img src="https://img.shields.io/badge/🍎_macOS_Intel-v26.8.4-555555?style=for-the-badge&logo=apple&logoColor=white" alt="Download macOS Intel" /><br/>
+        <sub><strong>Deplao-26.8.4.dmg</strong> (Chip Intel)</sub>
       </a>
     </td>
   </tr>
 </table>
 
 <p align="center">
-  👉 <strong><a href="https://github.com/babyvibe/deplao-builder/releases">Xem danh sách tất cả bản phát hành (Releases)</a></strong>
+  👉 <strong><a href="https://github.com/longlo2k3/deplao/releases">Xem danh sách tất cả bản phát hành (Releases)</a></strong>
 </p>
 
 <details>
@@ -382,7 +382,7 @@ flowchart TB
 ```
 
 > [!NOTE]
-> **Kiến trúc REST API từ v26.8.3:** Máy nhân viên gọi dữ liệu theo nhu cầu (**HTTP REST Fetch**) thay vì đồng bộ toàn bộ cơ sở dữ liệu nặng hàng GB. Hệ thống `DataAccessor` tự động phân luồng: Mode Boss dùng IPC trực tiếp, Mode Employee dùng `RestQueryService`. Realtime events được truyền tải qua Socket.IO cực kỳ mượt mà.
+> **Kiến trúc REST API từ v26.8.4:** Máy nhân viên gọi dữ liệu theo nhu cầu (**HTTP REST Fetch**) thay vì đồng bộ toàn bộ cơ sở dữ liệu nặng hàng GB. Hệ thống `DataAccessor` tự động phân luồng: Mode Boss dùng IPC trực tiếp, Mode Employee dùng `RestQueryService`. Realtime events được truyền tải qua Socket.IO cực kỳ mượt mà.
 
 ---
 
@@ -452,7 +452,7 @@ flowchart LR
 
 ### 1️⃣ Clone mã nguồn
 ```bash
-git clone https://github.com/babyvibe/deplao-builder.git
+git clone https://github.com/longlo2k3/deplao.git
 cd deplao-builder
 ```
 
@@ -486,7 +486,7 @@ Deplao được thiết kế theo triết lý **Local-First & Data Ownership**:
 
 ## 📣 Liên hệ & Hỗ trợ
 
-- 🐛 **Báo lỗi & Đề xuất tính năng:** Tạo Issue tại [GitHub Issues](https://github.com/babyvibe/deplao-builder/issues)
+- 🐛 **Báo lỗi & Đề xuất tính năng:** Tạo Issue tại [GitHub Issues](https://github.com/longlo2k3/deplao/issues)
 - 🌐 **Trang chủ chính thức:** [https://deplaoapp.com](https://deplaoapp.com/)
 
 ---
@@ -506,58 +506,3 @@ Dự án được phân phối dưới giấy phép open-source **[MIT License](
 <div align="center">
   <sub>Built with ❤️ for online businesses & automation builders</sub>
 </div>
-apo, Nhanh.vn, Pancake POS
-- Vận chuyển: GHN, GHTK
-- Thanh toán: Sepay, Casso
-- AI Assistant gợi ý trả lời, hỏi đáp trực tiếp trong hội thoại (xem mục 7)
-- Dễ kết hợp thành quy trình bán hàng và chăm sóc khách hàng khép kín
-
-### 6) Báo cáo, ERP và nhân viên
-- Báo cáo tin nhắn, liên hệ, chiến dịch, workflow, AI, nhân viên
-- ERP nội bộ gồm Task, Calendar, Notes
-- Mô hình boss ↔ nhân viên và phân quyền module
-- Hỗ trợ theo dõi hiệu suất làm việc theo từng người và từng giai đoạn
-
-### 7) 🤖 Trợ lý AI (AI Assistant)
-- Gợi ý trả lời thông minh trong hội thoại
-- Hỏi đáp trực tiếp với AI ngay trong khung chat
-- Tạo workflow tự động bằng câu lệnh tiếng Việt mà không cần kéo-thả
-- Dùng node AI trong workflow để xây dựng chatbot trả lời tự động 24/7
-- Hỗ trợ đa nền tảng AI: OpenAI, Claude, Gemini, Deepseek, Grok,... và các AI gateway local như 9Router, OpenRouter, v.v.
-
-## 🔒 Bảo mật & dữ liệu
-
-Deplao ưu tiên kiến trúc chạy cục bộ trên máy người dùng:
-
-- Tất cả dữ liệu tin nhắn, danh bạ, CRM, cài đặt và media được lưu trên máy
-- Đăng nhập bằng QR Code, không yêu cầu lưu mật khẩu Zalo, Cookie được mã hóa lưu trên máy
-- Người dùng có thể đổi thư mục lưu trữ dữ liệu sang ổ đĩa khác khi cần
-- Phù hợp với đội nhóm muốn kiểm soát dữ liệu nội bộ chặt chẽ hơn
-
-## 💻 Yêu cầu vận hành
-
-- Kết nối Internet 24/7 ổn định để đồng bộ hội thoại và automation
-- Nên để app hoạt động liên tục nếu dùng workflow hoặc vận hành đội nhóm
-
-
----------------------------------------------------------------------------------------------------------------------------------------------
-
-## 📣 Liên hệ
-
-- Báo lỗi, góp ý hoặc cần hỗ trợ: 👉 [Tạo issue tại đây](https://github.com/babyvibe/deplao-builder/issues)
-
-## 🙏 Lời cảm ơn
-
-Deplao xin gửi lời cảm ơn đến dự án: zca-js & fbchat-v2.
-
----
-
-## 📝 Giấy phép
-
-Dự án được phân phối dưới giấy phép **MIT**.
-Xem file [LICENSE](LICENSE) để biết thêm chi tiết.
-
----
-
-#   d e p l a o  
- 

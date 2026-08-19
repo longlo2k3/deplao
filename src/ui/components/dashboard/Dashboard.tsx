@@ -11,7 +11,7 @@ import ipc, { buildZaloAuth } from '@/lib/ipc';
 import PageLoading from '@/components/common/PageLoading';
 import { BugIcon, HomeIcon, RefreshIcon, SunIcon, TargetIcon, UserIcon, UsersIcon } from '@/components/common/icons';
 
-const SUPPORT_GITHUB_URL = 'https://github.com/babyvibe/deplao-builder';
+const SUPPORT_GITHUB_URL = 'https://github.com/longlo2k3/deplao';
 
 export default function Dashboard() {
   const { updateAccountStatus, reorderAccounts } = useAccountStore();

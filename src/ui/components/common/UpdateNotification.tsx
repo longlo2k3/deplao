@@ -9,7 +9,7 @@ const APP_VERSION: string = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSI
 /** Fetch aggregated release notes from GitHub for all versions between current and target */
 async function fetchAggregatedNotes(currentVersion: string, targetVersion: string): Promise<string> {
   try {
-    const res = await fetch(`https://api.github.com/repos/babyvibe/deplao-builder/releases?per_page=30`);
+    const res = await fetch(`https://api.github.com/repos/longlo2k3/deplao/releases?per_page=30`);
     if (!res.ok) return '';
     const releases: any[] = await res.json();
 
@@ -204,11 +204,11 @@ export function UpdateNotification() {
                   macOS không hỗ trợ cập nhật tự động. Vui lòng tải bản mới nhất về cài đặt:
                 </p>
                 <div className="flex gap-2">
-                  <a href={`https://github.com/babyvibe/deplao-builder/releases/latest/download/Deplao-${updateInfo.version}-arm64.dmg`} target="_blank" rel="noopener noreferrer" onClick={dismiss}
+                  <a href={`https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-${updateInfo.version}-arm64.dmg`} target="_blank" rel="noopener noreferrer" onClick={dismiss}
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors no-underline">
                     Apple Silicon (M)
                   </a>
-                  <a href={`https://github.com/babyvibe/deplao-builder/releases/latest/download/Deplao-${updateInfo.version}.dmg`} target="_blank" rel="noopener noreferrer" onClick={dismiss}
+                  <a href={`https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-${updateInfo.version}.dmg`} target="_blank" rel="noopener noreferrer" onClick={dismiss}
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gray-600 hover:bg-gray-500 text-white text-sm font-medium transition-colors no-underline">
                     Intel Mac
                   </a>
@@ -280,13 +280,13 @@ export function UpdateNotification() {
               </button>
               {isMac ? (
                 <div className="flex-1 flex gap-1">
-                  <a href={`https://github.com/babyvibe/deplao-builder/releases/latest/download/Deplao-${updateInfo.version}-arm64.dmg`} target="_blank" rel="noopener noreferrer" onClick={dismiss}
+                  <a href={`https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-${updateInfo.version}-arm64.dmg`} target="_blank" rel="noopener noreferrer" onClick={dismiss}
                     className="flex-1 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium text-center no-underline">ARM (chip M+)</a>
-                  <a href={`https://github.com/babyvibe/deplao-builder/releases/latest/download/Deplao-${updateInfo.version}.dmg`} target="_blank" rel="noopener noreferrer" onClick={dismiss}
+                  <a href={`https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-${updateInfo.version}.dmg`} target="_blank" rel="noopener noreferrer" onClick={dismiss}
                     className="flex-1 py-2 rounded-xl bg-gray-600 hover:bg-gray-500 text-white text-xs font-medium text-center no-underline">Intel</a>
                 </div>
               ) : (
-                <a href={`https://github.com/babyvibe/deplao-builder/releases/tag/v${updateInfo.version}`} target="_blank" rel="noopener noreferrer"
+                <a href={`https://github.com/longlo2k3/deplao/releases/tag/v${updateInfo.version}`} target="_blank" rel="noopener noreferrer"
                   className="flex-1 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium text-center no-underline">
                   Tải thủ công
                 </a>

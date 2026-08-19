@@ -15,6 +15,30 @@ interface VersionEntry {
 // ─── Changelog data - thêm entry mới vào ĐẦU mảng khi có bản cập nhật ────────
 const CHANGELOG: VersionEntry[] = [
   {
+    version: '26.8.4',
+    date: '08/2026',
+    type: 'patch',
+    highlights: [
+      '🐛 Fix hiển thị tên — Sidebar, Forward & Group modal không còn hiện raw contact_id khi thiếu display_name',
+      '⚡ Chat ordering ổn định — Tin gửi FB/Zalo giữ đúng thứ tự & timestamp ngay cả khi echo về lệch',
+    ],
+    changes: [
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi hiển thị tên contact chưa có display_name — ConversationList/ForwardMessageModal/GroupModals dùng getFriendlyUserName fallback thay vì raw contact_id',
+          'Sửa lỗi outgoing message bị xếp sai vị trí khi temp message echo về — giữ send_seq + tempTs inherit, sort ổn định khi reload DB',
+        ],
+      },
+      {
+        category: 'improved',
+        items: [
+          'Timestamp-gap xử lý đúng — tin đến với timestamp cách xa không làm thay đổi thứ tự tin nhắn đã gửi',
+        ],
+      },
+    ],
+  },
+  {
     version: '26.8.3',
     date: '08/2026',
     type: 'minor',

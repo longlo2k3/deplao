@@ -121,7 +121,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.publish == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          repository: babyvibe/deplao-builder
+          repository: longlo2k3/deplao
           tag_name: ${{ steps.get_tag.outputs.tag }}
           name: "Deplao ${{ steps.get_tag.outputs.tag }}"
           files: |
@@ -135,8 +135,8 @@ jobs:
           fail_on_unmatched_files: false
 
       # ─── File .dmg sau khi publish ──────────────────────────────────────────
-      # Xem release tại: https://github.com/babyvibe/deplao-builder/releases
+      # Xem release tại: https://github.com/longlo2k3/deplao/releases
       # Link tải cố định:
-      #   https://github.com/babyvibe/deplao-builder/releases/latest/download/Deplao-{version}-arm64.dmg
+      #   https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-{version}-arm64.dmg
       # ─────────────────────────────────────────────────────────────────────────
 

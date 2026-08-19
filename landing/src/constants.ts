@@ -6,16 +6,16 @@
 // ──────────────────────────────────────────────────────────────
 
 /** Phiên bản hiện tại - đồng bộ với package.json root */
-export const APP_VERSION = '26.8.3';
+export const APP_VERSION = '26.8.4';
 
-const GH_RELEASES = 'https://github.com/babyvibe/deplao-builder/releases';
+const GH_RELEASES = 'https://github.com/longlo2k3/deplao/releases';
 const GH_LATEST   = `${GH_RELEASES}/latest/download`;
 
 /** Trang releases GitHub */
 export const RELEASES_URL = GH_RELEASES;
 
 /** Trang GitHub repo */
-export const GITHUB_URL = 'https://github.com/babyvibe/deplao-builder';
+export const GITHUB_URL = 'https://github.com/longlo2k3/deplao';
 
 /** Windows - NSIS installer */
 export const DOWNLOAD_FILENAME      = `Deplao-Setup-${APP_VERSION}.exe`;

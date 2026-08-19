@@ -9,15 +9,15 @@ CRM · Marketing · ERP · POS · Workflow · AI Assistant — all in one unifie
 
 [🌐 Website](https://deplaoapp.com/) · [🇻🇳 Tiếng Việt](./README.md)
 
-![Version](https://img.shields.io/badge/version-26.8.3-22c55e)
+![Version](https://img.shields.io/badge/version-26.8.4-22c55e)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20Ubuntu-3b82f6)
 ![Electron](https://img.shields.io/badge/Electron-41-47848f?logo=electron&logoColor=white)
 ![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)
-![License](https://img.shields.io/github/license/babyvibe/deplao-builder)
-![Stars](https://img.shields.io/github/stars/babyvibe/deplao-builder?style=social)
-![Forks](https://img.shields.io/github/forks/babyvibe/deplao-builder?style=social)
+![License](https://img.shields.io/github/license/longlo2k3/deplao)
+![Stars](https://img.shields.io/github/stars/longlo2k3/deplao?style=social)
+![Forks](https://img.shields.io/github/forks/longlo2k3/deplao?style=social)
 
 </div>
 
@@ -39,48 +39,48 @@ CRM · Marketing · ERP · POS · Workflow · AI Assistant — all in one unifie
 <tr>
 <td align="center" width="50%">
 
-<a href="https://github.com/babyvibe/deplao-builder/releases/latest/download/Deplao-Setup-26.8.3.exe">
-<img src="https://img.shields.io/badge/🪟_Windows_10/11-v26.8.3-0078d4?style=for-the-badge&logo=windows&logoColor=white" alt="Download Windows" />
+<a href="https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-Setup-26.8.4.exe">
+<img src="https://img.shields.io/badge/🪟_Windows_10/11-v26.8.4-0078d4?style=for-the-badge&logo=windows&logoColor=white" alt="Download Windows" />
 </a>
 
-<big><strong>Deplao-Setup-26.8.3.exe</strong></big>
+<big><strong>Deplao-Setup-26.8.4.exe</strong></big>
 
 </td>
 <td align="center" width="50%">
 
-<a href="https://github.com/babyvibe/deplao-builder/releases/latest/download/Deplao-26.8.3-arm64.dmg">
-<img src="https://img.shields.io/badge/🍎_macOS_M1+-v26.8.3-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download macOS Apple Silicon" />
+<a href="https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-26.8.4-arm64.dmg">
+<img src="https://img.shields.io/badge/🍎_macOS_M1+-v26.8.4-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download macOS Apple Silicon" />
 </a>
 
-<big><strong>Deplao-26.8.3-arm64.dmg</strong></big>
+<big><strong>Deplao-26.8.4-arm64.dmg</strong></big>
 
 </td>
 </tr>
 <tr>
 <td align="center" width="50%">
 
-<a href="https://github.com/babyvibe/deplao-builder/releases/latest/download/Deplao-26.8.3.AppImage">
-<img src="https://img.shields.io/badge/🐧_Ubuntu_Linux-v26.8.3-e95420?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Download Ubuntu" />
+<a href="https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-26.8.4.AppImage">
+<img src="https://img.shields.io/badge/🐧_Ubuntu_Linux-v26.8.4-e95420?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Download Ubuntu" />
 </a>
 
-<big><strong>Deplao-26.8.3.AppImage</strong></big><br>
+<big><strong>Deplao-26.8.4.AppImage</strong></big><br>
 <big>works on any distro - <code>chmod +x</code> & run</big>
 
 </td>
 <td align="center" width="50%">
 
-<a href="https://github.com/babyvibe/deplao-builder/releases/latest/download/Deplao-26.8.3.dmg">
-<img src="https://img.shields.io/badge/🍎_macOS_Intel-v26.8.3-555555?style=for-the-badge&logo=apple&logoColor=white" alt="Download macOS Intel" />
+<a href="https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-26.8.4.dmg">
+<img src="https://img.shields.io/badge/🍎_macOS_Intel-v26.8.4-555555?style=for-the-badge&logo=apple&logoColor=white" alt="Download macOS Intel" />
 </a>
 
-<big><strong>Deplao-26.8.3.dmg</strong></big>
+<big><strong>Deplao-26.8.4.dmg</strong></big>
 
 </td>
 </tr>
 </table>
 
 <p align="center">
-👉 <strong><a href="https://github.com/babyvibe/deplao-builder/releases">View all releases</a></strong>
+👉 <strong><a href="https://github.com/longlo2k3/deplao/releases">View all releases</a></strong>
 </p>
 
 <details>
@@ -285,7 +285,7 @@ flowchart TB
     EA --> MC
 ```
 
-> **New architecture since v26.8.3:** Employees fetch data via **REST API** (HTTP fetch → Boss) instead of syncing the entire database as before. DataAccessor auto-routes: standalone/boss → direct IPC, employee → RestQueryService → Boss. Socket.IO replaces SSE for more reliable real-time events. Media is cached locally with a workspace → Boss → CDN cascade. Employees still have their own workspace, but no longer need to sync gigabytes of data when launching the app.
+> **New architecture since v26.8.4:** Employees fetch data via **REST API** (HTTP fetch → Boss) instead of syncing the entire database as before. DataAccessor auto-routes: standalone/boss → direct IPC, employee → RestQueryService → Boss. Socket.IO replaces SSE for more reliable real-time events. Media is cached locally with a workspace → Boss → CDN cascade. Employees still have their own workspace, but no longer need to sync gigabytes of data when launching the app.
 
 ---
 
@@ -540,7 +540,7 @@ Deplao prioritizes a local-first architecture:
 
 ## 📣 Contact & support
 
-- Bug reports, feature requests, questions: 👉 [Open an issue](https://github.com/babyvibe/deplao-builder/issues)
+- Bug reports, feature requests, questions: 👉 [Open an issue](https://github.com/longlo2k3/deplao/issues)
 
 ## 🙏 Acknowledgements
 
@@ -552,12 +552,3 @@ Deplao would like to thank the projects: zca-js & fbchat-v2.
 
 This project is distributed under the **MIT License**.
 See the [LICENSE](LICENSE) file for details.
-
----
-
-## 📝 License
-
-This project is distributed under the **MIT License**.
-See the [LICENSE](LICENSE) file for details.
-
----
