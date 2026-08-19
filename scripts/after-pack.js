@@ -14,6 +14,8 @@
 const path  = require('path');
 const fs    = require('fs');
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 module.exports = async function afterPack(context) {
   const { electronPlatformName, appOutDir, packager } = context;
 
@@ -38,7 +40,9 @@ module.exports = async function afterPack(context) {
     const { rcedit } = require('rcedit');
     const pkg    = require('../package.json');
 
-    await rcedit(exePath, {
+    // rcedit cli commit fails transiently when electron-builder still holds the
+    // exe (file-lock race). Retry with backoff before giving up.
+    const opts = {
       icon: iconPath,
       'version-string': {
         ProductName:      pkg.build.productName || pkg.name,
@@ -49,9 +53,22 @@ module.exports = async function afterPack(context) {
       },
       'file-version':    pkg.version,
       'product-version': pkg.version,
-    });
+    };
 
-    console.log(`[after-pack] ✅ Icon & version metadata embedded into ${productName}.exe`);
+    let lastErr;
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      try {
+        await rcedit(exePath, opts);
+        console.log(`[after-pack] ✅ Icon & version metadata embedded into ${productName}.exe`);
+        return;
+      } catch (e) {
+        lastErr = e;
+        await sleep(1000 * attempt);
+      }
+    }
+
+    console.error('[after-pack] ❌ rcedit failed after retries:', lastErr && lastErr.message);
+    // Non-fatal - build continues without icon embed
   } catch (err) {
     console.error('[after-pack] ❌ rcedit failed:', err.message);
     // Non-fatal - build continues without icon embed
