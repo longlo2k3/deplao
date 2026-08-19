@@ -1,0 +1,1256 @@
+﻿import React, { useState } from 'react';
+import { BellIcon, BookIcon, BotIcon, BugIcon, ChartIcon, ChatIcon, ClipboardListIcon, CloseIcon, FolderIcon, GlobeIcon, ImageIcon, LightningIcon, LinkIcon, LockIcon, PackageIcon, PluginIcon, RefreshIcon, RepeatIcon, RocketIcon, SendIcon, SparklesIcon, TagIcon, TrashIcon, UserIcon, UsersIcon, WifiIcon, WrenchIcon } from '@/components/common/icons';
+
+interface VersionEntry {
+  version: string;
+  date: string;
+  type: 'major' | 'minor' | 'patch' | 'hotfix';
+  highlights?: string[];
+  changes: {
+    category: 'new' | 'improved' | 'fixed' | 'removed' | 'security';
+    items: string[];
+  }[];
+}
+
+// ─── Changelog data - thêm entry mới vào ĐẦU mảng khi có bản cập nhật ────────
+const CHANGELOG: VersionEntry[] = [
+  {
+    version: '26.8.3',
+    date: '08/2026',
+    type: 'minor',
+    highlights: [
+      '📊 CRM nâng cấp — Xuất danh sách thành viên CSV, quản lý liên hệ chiến dịch, ưu tiên tìm kiếm theo từ khóa',
+      '🔍 Tìm kiếm tin nhắn nhanh — Gõ /1 ưu tiên mẫu có từ khóa /1 trước nội dung',
+      '⚡ Premium sync — Tự động dùng API quét nhóm khi tài khoản có Premium',
+      '👥 Thành viên nhóm — Luôn gọi getUserInfo lấy tên cho thành viên chưa có tên',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'Nút "Xuất danh sách" thành viên nhóm — Export CSV với STT, Tên, UID, SĐT, Vai trò',
+          'Nút "Xuất danh sách" liên hệ chiến dịch — Export CSV với STT, Tên, UID, SĐT, Trạng thái, Thời gian gửi',
+          'Nút xóa liên hệ khỏi chiến dịch — Xóa từng liên hệ hoặc xóa tất cả (chỉ khi draft/tạm dừng)',
+          'Hook usePremiumMemberSync — Tự động dùng scan API khi tài khoản Premium, fallback syncZaloGroups khi không Premium',
+          'Event crm-contacts-changed — Tự động làm mới danh sách liên hệ sau khi thêm từ nhóm',
+        ],
+      },
+      {
+        category: 'improved',
+        items: [
+          'Tìm kiếm tin nhắn nhanh — Ưu tiên sắp xếp theo keyword trước nội dung (gõ /1 hiện /1 trước)',
+          'Xuất CSV — Dùng format ="..." cho UID và SĐT dài để Excel không chuyển sang scientific notation',
+          'Thông báo sau khi xuất CSV — Hiển thị toast thành công với số lượng liên hệ đã xuất',
+          'Bottom action bar nhóm — Luôn hiển thị 2 nút "Thêm vào chiến dịch" / "Thêm vào liên hệ", disable khi chưa chọn',
+          'getUserInfo fallback — Luôn gọi cho thành viên chưa có tên, bỏ ngưỡng 50%',
+        ],
+      },
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi file media tên kết thúc bằng dấu chấm — Windows không cho xóa/update file "filename."',
+          'Sửa lỗi gắn nhãn Zalo hàng loạt — Chia batch 50 liên hệ mỗi lần để tránh API limit',
+          'Sửa lỗi danh sách liên hệ chiến dịch không hiển thị ngay sau khi thêm SĐT',
+          'Sửa lỗi danh sách CRM không refresh sau khi thêm liên hệ từ nhóm',
+          'Sửa lỗi useRef temporal dead zone trong CRMPage',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.8.2',
+    date: '08/2026',
+    type: 'minor',
+    highlights: [
+      '💬 Telegram reply/quote — Trả lời tin nhắn kèm trích dẫn nội dung gốc, @mention clickable mở profile',
+      '⚡ Chat ổn định hơn — Tải tin nhắn cũ bằng IntersectionObserver, phát hiện @mention chính xác, xóa cờ đã đọc tự động',
+      '💳 Thanh toán QR — Gia hạn tính năng quét nhóm ẩn tự động',
+      '🌐 Xây dựng kho Nhóm chung từ cộng đồng — Ai cũng có thể chia sẻ nhóm Zalo cho mọi thành viên sử dụng',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'Tự động xác nhận thanh toán và cập nhật hạn Premium',
+          'Chia sẻ nhóm — Popup nhập link, validate bằng getGroupLinkInfo, chọn danh mục, ghi chú. 18 ngành nghề',
+          'Danh sách nhóm chung — Layout 2 bên (danh mục + nhóm), search bỏ dấu, phân trang, copy link',
+          'Telegram reply/quote — gửi tin nhắn trả lời kèm trích dẫn nội dung gốc, lưu quote_data vào DB',
+          'Telegram @mention clickable — nhấn @username mở profile Telegram trong trình duyệt',
+          'Workflow zalo.getMessageHistory đọc từ DB cục bộ thay vì gọi API Zalo — tránh lỗi 404/rate limit',
+        ],
+      },
+      {
+        category: 'improved',
+        items: [
+          'backendService.ts — Thêm API payment + shared groups, map response snake_case → camelCase, header x-api-key',
+          'GroupMembersTab — Premium section với nút "Mua ngay" / "Gia hạn thêm" mở popup',
+          'ShareGroupModal — Auto-validate link khi mở, scrollable trên màn hình nhỏ',
+          'Chat — Dùng IntersectionObserver thay scroll event để tải tin nhắn cũ, ổn định hơn',
+          'Chat — Fallback retry cho hội thoại <20 tin không load được trang cũ',
+          'Phát hiện @mention chính xác hơn — dùng regex thay vì includes(), phân biệt @all/@allStar, dùng username cho Telegram',
+          'Xóa cờ @mention khi mở hội thoại — tự động unset has_mention flag',
+          'Avatar badge trong chế độ gộp trang to hơn, dễ nhìn hơn',
+        ],
+      },
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi Buffer is not defined + createCipheriv not available trong encryptBody',
+          'Sửa lỗi Telegram false "đã chỉnh sửa" — cập nhật reaction không còn set nhầm is_edited=1',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.8.1',
+    date: '08/2026',
+    type: 'patch',
+    highlights: [
+      '🔧 Fix bug Telegram — edit message, reply quote, read sync, auto-read, self-sent message, unread count',
+      '⚡ Workflow Telegram mở rộng — 3 trigger mới + 14 action mới, contact-picker cho tất cả fields',
+      '📌 Forum topic — đánh dấu đã đọc đúng topic (messages.ReadDiscussion), UI topic panel giống Telegram',
+      '🔐 Fix Zalo connect_failed — sửa 3 lỗi liên quan cookies encryption gây mất kết nối tài khoản sau khi update',
+    ],
+    changes: [
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi Zalo connect_failed "Cookies tài khoản không hợp lệ" — decryptCookies có fast-path sai: base64 20+ chars không bắt đầu bằng U2Fsd bị skip, nhưng trên Windows DPAPI encrypt produces prefix khác. Giờ luôn gọi safeStorage.decryptString cho mọi base64 string',
+          'Sửa lỗi startupAllWorkspaces đọc Telegram accounts như Zalo — query SELECT thiếu filter channel, truyền Telegram session/bot token vào loginZalo gây JSON.parse fail. Giờ filter channel=zalo',
+          'Sửa lỗi ZaloService tạo connection mới thay vì reuse — authKey mismatch giữa plain cookies (QR login) và encrypted cookies (DB). ZaloService.initialize() giờ check connection hiện có theo zaloId trước khi tạo mới',
+          'Sửa lỗi Telegram edit message — field message/id đảo ngược trong editMessageParams gây lỗi API',
+          'Sửa lỗi reply quote không gửi kèm khi reply tin nhắn Telegram — TelegramUserAdapter bỏ qua param quote, giờ extract replyToMsgId từ JSON và truyền qua IPC',
+          'Sửa lỗi tin nhắn đọc trên Telegram không đồng bộ về app — UpdateReadHistoryOutbox thiếu event:seen emit nên renderer không nhận được read receipt',
+          'Sửa lỗi tự động đánh dấu đã đọc Telegram — ConversationList effect [activeAccountId] gọi handleSelect tự động khi chuyển tài khoản, gửi read receipt mà user chưa click',
+          'Sửa lỗi unread_count bị đảo ngược trong DB — SQL CASE WHEN ? = 0 increment cho tin nhắn từ mình thay vì từ người khác',
+          'Sửa lỗi tin nhắn self-sent không hiển thị last message — socket echo bị skip do INSERT OR IGNORE nhưng emit trực tiếp không đến renderer, giờ dùng socket handler flow đầy đủ',
+          'Sửa lỗi edit history và recalled content mất khi chuyển hội thoại — edit handler chỉ update content mà không set is_edited=1/edit_history, delete handler chỉ set msg_type=deleted mà không set is_recalled=1/recalled_content',
+          'Sửa lỗi Forum topic panel — unread badge không xóa khi click topic, bỏ icon circle màu cũ, redesign layout giống Telegram (title + time + badge trên 1 dòng)',
+          'Sửa lỗi forum topic read receipt — dùng messages.ReadDiscussion thay vì channels.ReadHistory (GramJS schema chưa hỗ trợ top_msg_id)',
+          'Sửa lỗi conversation list restore effect tự gửi read receipt — tách UI restore khỏi handleSelect, chỉ khôi phục state mà không gọi markAsRead',
+          'Sửa lỗi voice message Telegram — Bot listener gán msgType=thay vì voice, isVoiceType() thiếu check msgType=voice, VoiceBubble không load được từ attachments',
+          'Sửa lỗi caption trùng khi gửi file Telegram — InputMedia có caption + SendMedia cũng có message, giờ chỉ giữ message trong SendMedia',
+          'Sửa lỗi mimeType sai khi gửi file MTProto — hardcode video/mp4 và application/octet-stream, giờ dùng ALL_MIME map đầy đủ',
+          'Sửa lỗi Bot API send methods không lưu DB — sendVideo/sendDocument/sendAudio/sendVoice/sendAnimation/sendVideoNote/sendSticker giờ lưu message + emit event',
+          'Sửa lỗi .flac không nhận diện được — thêm vào AUDIO_EXTS, ALL_MIME, adapter extension checks',
+          'Sửa lỗi messageId > 2^31 gây crash — dùng client.sendFile() thay invoke(SendMedia), tự parse Message.id đúng 32-bit',
+          'Sửa lỗi gửi file/video từ library không hiện trong UI — emit từ sendFile + trigger background download trực tiếp',
+          'Sửa lỗi .webp bị detect thành sticker — fileType từ UI ưu tiên hơn media attributes khi detect msgType',
+          'Sửa lỗi avatar URL scheme media://local/ không load — normalize trong chatStore.setContacts()',
+          'Sửa lỗi socket echo không update msg_type — persistTelegramMessage luôn update msg_type từ echo, return updated khi merge attachments',
+          'Sửa lỗi addMessage không merge attachments — socket echo arrives nhưng UI store không update vì duplicate check skip',
+          'Sửa lỗi local-media:// không tìm thấy file thiếu extension — protocol handler tự thử .jpg/.png/.webp/.mp4/.ogg/.mp3',
+          'Sửa lỗi MessageMediaWebPage video lưu sai extension — getMediaExtension detect media type thật từ webpage content',
+          'Sửa lỗi MessageQueue không deduplicate temp message — adapter trả messageId nhưng queue check msgId, giờ trả cả hai',
+          'Sửa lỗi gửi file từ máy tính qua library cho Telegram — handleDirectFile luôn dùng ipc.zalo, giờ detect channel và dùng channelIpc',
+          'Sửa lỗi video caption không hiển thị — renderVideo trong ChatWindow dùng FBVideoThumb không có caption, giờ render caption dưới video',
+          'Sửa lỗi @username không parse trong tin nhắn — linkifyText chỉ handle URLs, giờ thêm @username parsing',
+        ],
+      },
+      {
+        category: 'new',
+        items: [
+          'Workflow trigger: tg.trigger.unsend — kích hoạt khi tin nhắn bị thu hồi trên Telegram',
+          'Workflow trigger: tg.trigger.groupEvent — kích hoạt khi thành viên vào/rời nhóm Telegram',
+          'Workflow trigger: tg.trigger.message nâng cấp — thêm chatType filter (all/user/group/channel/topic), contact picker cho chatId và fromId, keyword mode đầy đủ',
+          'Workflow action: tg.markAsRead — đánh dấu đã đọc hội thoại Telegram',
+          'Workflow action: tg.markTopicAsRead — đánh dấu forum topic đã đọc (messages.ReadDiscussion)',
+          'Workflow action: tg.sendSticker — gửi sticker từ sticker set',
+          'Workflow action: tg.sendTyping — hiển thị trạng thái đang gõ',
+          'Workflow action: tg.addMember / tg.removeMember — thêm/xóa thành viên nhóm',
+          'Workflow action: tg.blockUser / tg.unblockUser — chặn/bỏ chặn người dùng',
+          'Workflow action: tg.changeGroupName — đổi tên nhóm Telegram',
+          'Workflow action: tg.leaveGroup — rời khỏi nhóm Telegram',
+          'Workflow action: tg.exportInviteLink — lấy link mời tham gia nhóm',
+          'Workflow action: tg.createForumTopic — tạo topic mới trong nhóm Telegram Forum',
+          'Contact picker cho workflow — tất cả input chọn hội thoại/nhóm/người dùng dùng popup contact-picker, tự lọc theo kênh Telegram (channel: telegram_user)',
+          'Bulk assign local label — transaction-based bulk insert thay vì hàng nghìn IPC calls riêng lẻ, nhanh hơn ~100x',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.8.0',
+    date: '08/2026',
+    type: 'major',
+    highlights: [
+      '🤖 Tích hợp Telegram Bot + Telegram User (beta) — gửi/nhận tin nhắn, ảnh, video, file, quản lý nhóm',
+      '🌐 Workflow hỗ trợ Telegram Bot + Telegram User — trigger workflow từ tin nhắn, gửi tin nhắn tự động qua node',
+      '🔗 Link trong tin nhắn hiển thị xanh + gạch chân, click mở trình duyệt bên ngoài',
+      '📜 Sửa lỗi chập chờn scroll nhảy khi tải tin nhắn cũ',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'Tích hợp Telegram Bot (beta) — kết nối qua bot token, polling tin nhắn mới, gửi text/ảnh/video/file/audio/sticker/voice/GIF, quản lý nhóm (admin, kick, pin, đổi tên, đổi avatar)',
+          'Tích hợp Telegram User (beta) — kết nối qua MTProto, đồng bộ tin nhắn real-time, hỗ trợ forum/topics, gửi reaction, edit, forward, unsend',
+          'Workflow hỗ trợ Telegram Bot + Telegram User — trigger workflow từ tin nhắn, gửi tin nhắn tự động qua node',
+          'Link clickable trong tin nhắn — detect URL (http/https/www/domain), hiển thị xanh gạch chân, click mở trình duyệt bên ngoài (shell.openExternal)',
+          'Username cho tài khoản Telegram — hiển thị @username thay vì SĐT (Telegram không có SĐT), lưu riêng field username trong account',
+          'Avatar fallback theo kênh — Sidebar hiện icon Zalo/Facebook/Telegram khi không có avatar, giống Dashboard',
+          'Telegram Bot health check + auto-reconnect — check bot có đang polling không mỗi 60s, nếu disconnect thì startBot lại',
+        ],
+      },
+      {
+        category: 'improved',
+        items: [
+          'Gửi ảnh/file/video cho Telegram Bot — dùng fs.createReadStream cho local file (trước đây chỉ hỗ trợ URL)',
+          'TelegramBotAdapter.sendAttachment routing đúng theo file type — image→sendPhoto, video→sendVideo, audio→sendAudio, file→sendDocument',
+          'Sửa lỗi "An object could not be cloned" khi gọi getActiveBots — strip non-serializable properties (functions, circular refs) trước khi trả qua IPC',
+          'Contact mới từ Telegram hiện ngay trong danh sách — trước đây chỉ lưu DB, không cập nhật Zustand store',
+          'Avatar Telegram Bot/User được fetch và cập nhật vào UI — emit db:unreadChanged sau khi download avatar để trigger refresh',
+          'Telegram User fetchNewContactAvatar emit đúng source — trước đây emit không có source bị filter bỏ',
+          'reconnectAllTelegramAccounts dùng đúng field — botUsername từ acc.username, botFirstName từ acc.full_name',
+          'Tải tin nhắn cũ không nhảy vị trí scroll — dùng useLayoutEffect thay vì useEffect + requestAnimationFrame, restore scrollTop đồng bộ trước khi paint',
+          'Hiển thị "Không có hội thoại" ngay khi load xong mà không có data — trước đây skeleton hiện 8s mới chuyển',
+        ],
+      },
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi Telegram Bot/User tự đánh dấu đã đọc dù chưa đọc — thêm channelIpc.markAsRead() cho non-Zalo channels trong auto-read flow (incoming message + window focus)',
+          'Sửa lỗi link trong tin nhắn mở trong app thay vì trình duyệt — thêm e.preventDefault() trước shell.openExternal',
+          'Sửa lỗi gửi ảnh từ clipboard/thư viện không hoạt động cho Telegram Bot — isNonZalo fallback nhầm vào Facebook IPC, đổi thành isTelegram check trước',
+          'Sửa lỗi Telegram Bot không tự kết nối khi mở app — reconnectAllTelegramAccounts dùng sai field (acc.full_name thay vì acc.username cho botUsername)',
+          'Sửa lỗi avatar Sidebar hiện ảnh rỗng khi URL lỗi — onError ẩn img + retry fail → xóa avatar_url để fallback sang channel icon',
+          'Sửa lỗi ConversationList skeleton 8s khi không có contact — setInitialLoading(false) ngay khi load trả về 0 item',
+          'Sửa lỗi "An object could not be cloned" khi gọi telegram:getActiveBots — account object chứa _inboxConsumer (function) không serialize được qua IPC',
+          'Sửa lỗi scroll nhảy khi tải tin nhắn cũ — requestAnimationFrame chạy sau paint, bị race condition với browser layout; đổi sang useLayoutEffect chạy trước paint',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.7.5',
+    date: '07/2026',
+    type: 'minor',
+    highlights: [
+      '⚡ Chat mượt hơn — bỏ status indicator trên boss mode, tối ưu scroll',
+      '🤖 AI chat được lưu vào DB — đổi hội thoại quay lại vẫn giữ lịch sử chat AI, cache trợ lý theo từng thread',
+      '🔧 Sửa lỗi Reaction hiển thị 2 lần, không lưu DB, không hiển thị khi đổi hội thoại',
+      '🔧 Sửa lỗi "Lỗi lưu workflow" khi dùng kịch bản mẫu',
+      '🔍 Tìm kiếm hội thoại hoạt động ở chế độ employee',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'Lưu lịch sử chat AI vào DB — bảng ai_conversations + ai_conversation_messages, tự động tạo conversation per (thread + assistant), auto-set title từ tin nhắn đầu',
+          'Cache trợ lý AI theo từng hội thoại — chọn assistant ở thread A → chuyển thread B → quay lại thread A → tự động restore assistant đã chọn (persist qua localStorage)',
+          'Tìm kiếm hội thoại ở chế độ nhân viên — GlobalSearchPanel gọi DataAccessor.searchConversations() qua boss API khi employee mode, merge với kết quả local',
+          'Batch query messages theo IDs — thêm getMessagesByIds IPC, giảm N individual IPC calls thành 1 batch call khi load reply quotes',
+        ],
+      },
+      {
+        category: 'improved',
+        items: [
+          'Gửi tin nhắn nhanh hơn — textarea clear ngay lập tức khi Enter (không đợi setTimeout), bỏ redundant updateStatus trong MessageQueue.enqueue',
+          'Ẩn send status indicator (pending/sending/sent/failed) trên boss mode — boss gửi trực tiếp qua Zalo rất nhanh, không cần hiện status; employee mode vẫn giữ',
+          'Tối ưu click hội thoại — bỏ activeThreadId dependency khỏi useZaloEvents useEffect (14+ listeners không còn unsub/resub mỗi lần đổi thread)',
+          'sendSeenForThread nhận lastMsg từ caller — bỏ redundant DB query khi mở hội thoại',
+          'Gộp Zustand updates trong handleSelect — 3-4 setState riêng biệt → 1 useChatStore.setState()',
+          'Giảm verbose logging trong DatabaseService.getMessages — bỏ log từng video/fb message chi tiết',
+          'Tối ưu scroll — gộp 5 scroll mechanisms thành 1 scrollToBottom() controller duy nhất, dùng stable-height detection thay vì 200ms heuristic',
+          'Trang tin nhắn: 50 → 20 tin/trang — load nhanh hơn, ít render hơn',
+          'Load tin nhắn cũ ổn định hơn — IntersectionObserver sentinel thay vì atTop state (không bị stale do React batching)',
+          'clearDraft: di chuyển IPC call ra ngoài Zustand set() callback — state update thuần, không bị block bởi IPC setup',
+        ],
+      },
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi Reaction hiển thị 2 lần trên boss — bỏ UI update cho self-reactions (handleReact đã optimistic update), chỉ persist DB',
+          'Sửa lỗi Reaction không lưu DB ở employee mode — parameter mismatch icon vs emoji trong databaseIpc handler',
+          'Sửa lỗi Reaction hiển thị 2 lần ở employee mode — REST handler emit event:reaction ngược lại renderer tạo vòng lặp',
+          'Sửa lỗi chat.reaction chạy qua message listener tạo duplicate — thêm filter bỏ chat.reaction trong ZaloLoginHelper',
+          'Sửa lỗi "Lỗi lưu workflow" khi dùng kịch bản mẫu — else gắn nhầm vào if (res.webhookToken) thay vì if (res?.success)',
+          'Sửa lỗi scroll không xuống đáy khi mở hội thoại — messagesReady gate quá sớm, race condition giữa 5 scroll mechanisms',
+          'Sửa lỗi load tin nhắn cũ lúc tự load lúc không — atTop state bị stale, thay bằng IntersectionObserver sentinel',
+          'Sửa lỗi clearDraft gọi IPC bên trong Zustand set() callback — anti-pattern, di chuyển ra ngoài',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.7.4',
+    date: '07/2026',
+    type: 'patch',
+    highlights: [
+      '🚀 Cập nhật không bắt buộc update bản mới — nút "New version" trên TopBar, xác nhận trước khi tải, tổng hợp ghi chú từ nhiều phiên bản',
+      '📱 Chuyển tiếp ảnh/file/video hoạt động đúng với workspace employee — dùng native forward API khi không có file local',
+      '🔄 Nhân viên tự kết nối lại — heartbeat không dừng khi mất mạng, tự phục hồi khi có mạng',
+      '📄 CRM phân trang tối ưu — bỏ chọn tất cả hàng loạt, thêm nhảy trang + chọn số dòng/trang',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'Hệ thống cập nhật mới: không tự động tải, hiển thị nút "New v{version}" trên TopBar cạnh phiên bản hiện tại',
+          'Popup xác nhận cập nhật: hiện ghi chú phát hành (tổng hợp từ GitHub nếu bỏ qua nhiều phiên bản), nút "Cập nhật ngay" / "Để sau"',
+          'macOS: popup hiển thị link tải Apple Silicon + Intel DMG + nút thử cập nhật tự động',
+          'Dashboard: thêm nút "Thêm tài khoản" (giống sidebar) — mở AddAccountModal ngay từ Dashboard',
+          'CRM phân trang: nút số trang + nhảy đến trang + chọn 50/100/200/500 dòng mỗi trang',
+          'Quét thành viên nhóm: hiển thị role Trưởng nhóm / Phó nhóm khi quét qua backend API (lấy từ getGroupLinkInfo)',
+        ],
+      },
+      {
+        category: 'improved',
+        items: [
+          'Loại bỏ bắt buộc cập nhật: bỏ autoDownload, autoInstallOnAppQuit, đếm ngược tự restart, hệ thống hoãn (postpone)',
+          'Ghi chú phát hành: tự động fetch từ GitHub API, tổng hợp tất cả phiên bản giữa phiên bản hiện tại và mới',
+          'CRM danh sách liên hệ: bỏ nút "Chọn tất cả" toàn bộ — tránh lag khi 10-50k dòng, chỉ chọn theo trang',
+          'Nhân viên tunnel: heartbeat tiếp tục chạy khi disconnected — mỗi 15s thử lại, tự reconnect khi boss reachable',
+          'Dashboard: search input nằm cùng hàng với "Kéo thả để sắp xếp thứ tự" để gọn hơn',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.7.3',
+    date: '07/2026',
+    type: 'minor',
+    highlights: [
+      '🔍 CRM Quét thành viên nhóm — quét toàn bộ thành viên từ nhóm Zalo, lưu vào CRM để chạy chiến dịch',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'CRM tab "Quét thành viên" (Premium) — dán link nhóm Zalo, quét thành viên nhóm ẩn/chờ duyệt, hiển thị tên + avatar + UID, tự động lưu vào DB',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.7.2',
+    date: '07/2026',
+    type: 'minor',
+    highlights: [
+      '🔧 Employee mode: sửa lỗi kết nối đến BOSS',
+      '⚡ Optimistic Messages: hiển thị tin nhắn ngay khi bấm gửi, không chờ API xác nhận — chat mượt hơn hẳn',
+      '🔄 Message Queue: hàng đợi gửi tin thông minh — FIFO, retry tự động, timeout, gửi đa hội thoại song song',
+      '🖼️ Gửi nhiều ảnh: preview ngay lập tức, webhook xác nhận từng ảnh, không giật khi chuyển ảnh',
+      '🪝 Avatar Retry: tự động nạp lại avatar khi lỗi 403/hết hạn — áp dụng cho cả danh sách chat, sidebar, header',
+      '📋 ERP Tasks cho nhân viên: xem/sửa/xoá task qua REST API, tổng quan công việc hoạt động đầy đủ',
+      '🔐 ERP Phân quyền: nhân viên chỉ thấy task mình liên quan (giao/theo dõi/tạo), admin xem tất cả',
+      '🖼️ Quick Message ảnh: nhân viên upload ảnh lên Boss trước khi lưu — hiển thị đúng ở mọi phía',
+      '🔒 Fix Ctrl+Shift+L: phím tắt khoá app hoạt động ngay sau khi bật bảo mật, không cần reset app',
+      '🏷️ Workflow: node Đổi tên gợi nhớ Zalo — hỗ trợ biến động, tự cập nhật DB + broadcast cho nhân viên',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'MessageQueue — hệ thống gửi tin nhắn optimistic: hiển thị temp message ngay, enqueue vào hàng đợi, gửi background',
+          'Optimistic message fields: send_status (pending/sending/sent/received/failed/timeout), real_msg_id, temp_id, media_type, upload_progress',
+          'Status indicators trên bong bông tin: ⏳ pending, ↻ sending, ✓ sent, ✗ failed với nút Gửi lại',
+          'buildZaloAuth() helper — chuẩn hóa auth object, luôn kèm accountId để resolveZaloId fallback đúng khi nhiều connections',
+          'Avatar retry utility (avatarRetry.ts) — debounce 5 phút, tự detect Zalo/Facebook, retry getUserInfo hoặc refreshContactAvatar',
+          'Tách ChatWindowBubbles.tsx từ ChatWindow.tsx — giảm kích thước file, dễ maintain',
+          'Tách emojiUtils.ts, messageParser.ts, messageTypeUtils.ts, videoUtils.ts ra lib/chat/',
+          'ForwardMessageModal, CreatePollDialog, NoteViewModal, PollBubble, FriendRequestBar, ReactionComponents tách thành component riêng',
+          'ERP Tasks REST API cho employee: 12 endpoints (CRUD task, project, assign, watcher, comment, checklist)',
+          'ERP Calendar/Profiles/Departments REST API cho employee mode',
+          'DataAccessor.erpProjects/Tasks/CreateTask/UpdateTask/DeleteTask/MyInbox/CalendarEvents...',
+          'Workflow node zalo.changeAliasName — đổi tên gợi nhớ bạn bè Zalo, hỗ trợ biến {{ $trigger.fromName }}, tự cập nhật DB + broadcast nhân viên',
+        ],
+      },
+      {
+        category: 'improved',
+        items: [
+          'Gửi text/link/like/ảnh/file/video/voice: enqueue vào MessageQueue thay vì await trực tiếp — input không bị block',
+          'Gửi nhiều ảnh: preview batch temp giữ nguyên khi upload, webhook đếm ảnh nhận về, xóa temp khi ảnh đầu tiên xác nhận',
+          'Gửi ảnh từ thư viện (LibraryPickerModal): tạo temp preview trước khi gửi, enqueue vào MessageQueue',
+          'Thư viện ảnh: ưu tiên local path (Boss) hơn HTTP URL (Employee) khi hiển thị thumbnail',
+          'Dedup tin nhắn gửi: match bằng real_msg_id trước (chính xác), fallback content text (backward compat)',
+          'useZaloEvents + useChatEvents: cập nhật send_status=received khi webhook xác nhận, báo MessageQueue khi nhận self-image',
+          'Tất cả UI components chuyển từ inline auth object → buildZaloAuth() — đảm bảo accountId luôn có',
+          'Scroll vào hội thoại: đồng bộ trong useLayoutEffect trước khi browser paint — hết giật',
+          'erpTaskStore/erpEmployeeStore/erpCalendarStore: tất cả actions dùng DataAccessor khi employee mode',
+          'TaskEditorDrawer: load/save/comment/checklist qua DataAccessor — employee mở chi tiết task từ Boss DB',
+          'ERP phân quyền: employee chỉ thấy task mình liên quan (assignee/watcher/reporter), admin xem tất cả',
+          'Quick Message ảnh: employee upload ảnh lên Boss trước khi lưu QM — hiển thị đúng ở mọi phía',
+          'ERP Menu: event permissionUpdate bypass throttle 60s — nhân viên nhận ERP role ngay khi Boss bật quyền',
+        ],
+      },
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi giật khi vào hội thoại đã cached — scroll xuống đáy trước khi paint, không thấy content nhảy',
+          'Sửa lỗi gửi 2 ảnh nhưng hiện 3 ảnh — xóa batch temp ngay khi webhook đầu tiên đến',
+          'Sửa lỗi thumbnail thư viện hiển thị URL sai trên Boss — ưu tiên local-media:// thay vì HTTP API',
+          'Sửa lỗi avatar 403 không tự nạp lại — retry tự động cho cả Zalo và Facebook contacts',
+          'Sửa lỗi Blocked zalo:getPinConversations khi nhiều connections — buildZaloAuth luôn kèm accountId',
+          'Sửa lỗi gửi ảnh từ thư viện không có preview — tạo temp message trước khi enqueue',
+          'Sửa lỗi không scroll xuống cuối khi gửi ảnh từ LibraryPickerModal — thêm scrollToBottom event',
+          'Sửa lỗi có thể MẤT DỮ LIỆU KHI UPDATE: đóng DB hoàn toàn trước khi NSIS installer chạy (trước đó chỉ flush WAL nhưng không close → file bị lock → silent fallback sang :memory: trống)',
+          'Sửa lỗi ERP Menu không hiển thị cho nhân viên — thêm event permissionUpdate, fix INSERT erp_employee_profiles',
+          'Sửa lỗi Tổng quan công việc hiển thị 0 task — routing conflict: inbox bị regex tasks/{id} nuốt, đổi thứ tự routes',
+          'Sửa lỗi TaskInboxPage loadInbox params lệch — bỏ employeeId thừa từ code cũ JOIN',
+          'Sửa lỗi Quick Message ảnh không hiển thị ở employee — upload lên Boss trước khi lưu, dùng toLocalMediaUrl',
+          'Sửa lỗi Blocked getPinConversations khi nhiều connections — buildZaloAuth luôn kèm accountId',
+          'Fix Ctrl+Shift+L không hoạt động sau khi bật bảo mật trong Cài đặt — App.tsx + TopBar giờ lắng ngự sự kiện lockScreen:changed realtime'
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.7.1',
+    date: '07/2026',
+    type: 'patch',
+    highlights: [
+      '🔧 Employee mode: RestQueryService init sớm — fix "Chưa kết nối tới BOSS" khi mới mở app',
+      '📹 Video/file employee: stream trực tiếp từ boss URL, không chờ download hết mới mở',
+      '🎨 Theme: Sửa icon emoji sang SVG để đảm bảo tương thích với mọi thiết bị, màu tin nhắn sửa lại phù hợp hơn.',
+    ],
+    changes: [],
+  },
+  {
+    version: '26.7.0',
+    date: '07/2026',
+    type: 'major',
+    highlights: [
+      '🏛️ Kiến trúc mới: thay sync data toàn bộ bằng REST API — Employee gọi dữ liệu qua Boss theo từng request, ổn định & bảo mật hơn',
+      '📁 Thư viện Media dùng chung — ảnh/file/video có thư mục, upload, tìm kiếm, chọn nhanh khi chat',
+      '📡 Socket.IO thay SSE — kết nối realtime giữa Boss & Employee ổn định hơn, ít mất kết nối',
+      '⚡ PageLoading toàn app — skeleton loading cho employee mode, không còn màn hình trắng khi chờ REST API',
+      '🔁 Kết nối Boss linh hoạt — popup reconnect, ngắt kết nối, lưu mật khẩu, hiển thị latency',
+      '📦 Media Cache tự động — employee xem ảnh/video từ workspace cache, download background từ Boss',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'Thư viện Media (Library): quản lý ảnh/file/video tập trung, có thư mục, upload qua multipart, thumbnail tự động, chọn từ library khi chat',
+          'DataAccessor — lớp trung gian routing UI → IPC hoặc REST API tuỳ mode, không sửa UI component',
+          'REST API cho employee: /api/query/* (read), /api/command/* (write), /api/boot (init), /api/media/* (file), /api/library/*, /api/search/*',
+          'RestQueryService — REST client cho employee, tự động health check, onStatusChange callback, cache',
+          'RestApiHandlers (986 dòng) — 50+ handler: messages, contacts, labels, flags, pins, notes, workflows, campaigns, AI, analytics, library...',
+          'MediaCacheService — cache media local cho employee, cascade: workspace → cache → Boss → CDN',
+          'EmployeeCache — in-memory cache conversations/messages/labels cho employee, SSE push tự update',
+          'Socket.IO — kết nối realtime giữa Boss & Employee thay SSE, attach cùng HTTP server relay',
+          'PageLoading component — skeleton loading 4 variants (full/inline/skeleton/overlay), dùng xuyên suốt app',
+          'EmployeeSettings: thiết kế lại với tabs Employees/Relay, quick actions start/stop tunnel, search nhân viên, groups panel',
+          'TopBar: popup reconnect Boss, ngắt kết nối, lưu mật khẩu localStorage, hiển thị latency real-time',
+          'Database: FTS5 full-text search migration, media library tables, withDbPathAsync method',
+          'Group member info auto-fetch — khi có tin nhắn nhóm từ sender chưa có tên/avatar, tự getUserInfo từng người, throttle 60s',
+        ],
+      },
+      {
+        category: 'improved',
+        items: [
+          'Xoá cơ chế sync data toàn bộ (syncIpc.ts) — employee không cần chờ sync hàng GB khi vào app',
+          'HttpRelayService viết lại lớn: REST API routing, REST cache 1.5s, Socket.IO, xoá sync endpoints',
+          'Tất cả UI components chuyển từ ipc.db.xxx → DataAccessor (messages, contacts, labels, notes, analytics, workflow, AI, integration...)',
+          'Dashboard: loading state với PageLoading, xoá nút "Đồng bộ từ Boss" cũ',
+          'ChatWindow: PageLoading khi load thread, cascade media URL cho employee, fetch thành viên nhóm tự động',
+          'MessageBubbles: cascade URL workspace cache → Boss → CDN, employee sticker loading',
+          'MediaSection: dùng DataAccessor, reload labels/media khi có change',
+          'AnalyticsPage: DataAccessor + PageLoading thay skeleton local cũ',
+          'EmployeeLoginScreen: xoá sync progress UI, dùng RestQueryService login',
+          'HttpClientService: tái cấu trúc giảm từ 576 xuống ~200 dòng',
+          'fileIpc: media:resolveUrl với cache-first, kiểm tra workspace media directory trước',
+          'EventBroadcaster: thêm 10+ event mới (library, unread, conversationDeleted, contactProfileUpdated, tagChanged...)',
+          'DatabaseService: thêm Logger.log cho getMessages để debug employee routing',
+          'WorkflowList: dùng DataAccessor cho employee, cache tránh redundant load',
+        ],
+      },
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi employee không load được media local — cascade URL qua workspace cache → Boss → CDN',
+          'Sửa lỗi employee login mất token khi restart — lưu & restore từ workspace',
+          'Sửa lỗi SSE half-open socket không phát hiện — Socket.IO quản lý connection lifecycle',
+          'Sửa lỗi group member hiển thị UID thay vì tên — auto-fetch getUserInfo từng member',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.6.7',
+    date: '06/2026',
+    type: 'minor',
+    highlights: [
+      '🌐 Workflow: thêm node Webhooks - nhận và xử lý HTTP request từ bên thứ ba, kích hoạt luồng tự động',
+      '🧩 Kho template Webhooks - nhiều mẫu có sẵn để tích hợp nhanh với các dịch vụ ngoài',
+      '📍 Hiển thị tin nhắn địa chỉ trên Zalo - parse toạ độ, hiện địa chỉ cụ thể kèm link Google Maps',
+      '👥 Sidebar trái: chế độ xem danh sách tài khoản đầy đủ, hỗ trợ tìm kiếm nhanh',
+      '🏷️ Lọc nhãn hội thoại nâng cao - chọn "Tất cả" hoặc "Một trong" các nhãn đã chọn',
+      '📤 Chiến dịch CRM: random delay giữa các tin nhắn và giữa các liên hệ - tránh spam, tự nhiên hơn',
+      '🐛 Sửa lỗi kéo chọn nhiều tin nhắn trong chế độ chọn - thêm phím ESC để thoát nhanh',
+      '🐛 Sửa lỗi trình xem ảnh hiện lại sau khi đóng nhanh',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'Workflow: node Webhooks - nhận HTTP request (GET/POST/PUT/DELETE) từ hệ thống bên thứ ba, parse body JSON/form-data, truyền biến động vào workflow, phản hồi status tuỳ chỉnh',
+          'Kho template Webhooks - các mẫu có sẵn: webhook đơn giản, xác thực signature, tích hợp webhook từ các dịch vụ phổ biến',
+          'Hiển thị tin nhắn địa chỉ Zalo - parse toạ độ (lat/lng) từ nội dung tin nhắn, hiển thị tên địa điểm + địa chỉ cụ thể + link mở Google Maps',
+          'Sidebar trái: chế độ xem danh sách tài khoản - hiển thị tất cả tài khoản dạng danh sách, tìm kiếm theo tên tài khoản, hỗ trợ nhiều tài khoản dễ quản lý',
+        ],
+      },
+      {
+        category: 'improved',
+        items: [
+          'Lọc nhãn hội thoại: bổ sung chế độ "Tất cả nhãn" (giao tất cả) và "Một trong các nhãn" (giao một) - linh hoạt hơn khi lọc hội thoại theo nhiều nhãn',
+          'Chiến dịch CRM: thêm random delay - cấu hình khoảng thời gian delay ngẫu nhiên giữa các tin nhắn và giữa các liên hệ, giúp chiến dịch tự nhiên hơn, tránh bị spam detection',
+          'Chế độ chọn nhiều tin nhắn: nhấn ESC để thoát khỏi chế độ chọn nhanh',
+        ],
+      },
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi kéo chọn tin nhắn (drag-select) không hoạt động đúng trong chế độ chọn nhiều tin',
+          'Sửa lỗi trình xem ảnh bị hiển thị lại lần nữa sau khi đóng nhanh - race condition giữa sự kiện đóng và mở ảnh mới',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.6.6',
+    date: '06/2026',
+    type: 'minor',
+    highlights: [
+      '⌨️ Nâng cấp phím tắt hội thoại: Tab chuyển hội thoại, Ctrl+P ghim, Ctrl+F tìm tin, Ctrl+K tìm hội thoại, Ctrl+N ghi chú, Ctrl+S AI, Ctrl+I thông tin, Ctrl+T tag nhanh',
+      '⌨️ Chuyển tài khoản nhanh: giữ Ctrl+Tab → overlay chọn nick, thả Ctrl để chọn, Esc thoát',
+      '📁 Tự động xoá media cũ - cài số ngày trong Cài đặt → Tài khoản, dọn mỗi đêm lúc 3AM',
+      '📡 Tăng ổn định khi gửi tin Facebook - chống trùng tin, xử lý link đúng, hạn chế mất kết nối',
+      '🤖 AI model tuỳ chỉnh - nhập model name bất kỳ cho 9Router & OpenRouter',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'Phím tắt hội thoại: Tab/Shift+Tab chuyển hội thoại, Ctrl+P ghim/bỏ ghim, Ctrl+K tìm hội thoại, Ctrl+F tìm tin nhắn, Ctrl+N tạo ghi chú, Ctrl+S mở AI, Ctrl+I mở thông tin, Ctrl+T ẩn/hiện tag nhanh - kèm popup tra cứu',
+          'Chuyển tài khoản nhanh Ctrl+Tab: giữ Ctrl + Tab navigate, thả Ctrl để chọn, Shift+Tab prev, Esc thoát; hỗ trợ merged inbox mode (có thêm "Tất cả tài khoản")',
+          'Xoá tài khoản triệt để: 2 chế độ - (1) Xoá tất cả dữ liệu: xoá sạch tin nhắn, danh bạ, khách hàng, chiến dịch, workflow, file media; (2) Chỉ xoá tài khoản: giữ nguyên dữ liệu',
+          'Tự động xoá media cũ theo ngày - cài đặt số ngày riêng từng tài khoản, hệ thống tự dọn mỗi 3AM',
+          'AI: custom model input cho 9Router & OpenRouter - nhập model name bất kỳ, thêm model mới (Big Pickle, Nemotron 3 Ultra, North Mini Code)',
+          'Bridge Facebook: tự động kiểm tra bridge còn sống không, respawn nếu bị treo',
+        ],
+      },
+      {
+        category: 'improved',
+        items: [
+          'Tăng ổn định gửi tin Facebook: chống trùng tin nhắn khi bridge echo ngược, xử lý link/sticker đúng',
+          'Cải thiện kết nối Facebook: giảm tình trạng mất kết nối do overflow queue, tự động chuyển qua bridge',
+          'Settings: tách giao diện quản lý tài khoản riêng, thêm cài đặt xoá media cho từng tài khoản',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.6.5',
+    date: '06/2026',
+    type: 'minor',
+    highlights: [
+      '🖱️ Kéo chuột chọn nhiều tin nhắn - giữ và kéo qua nhiều tin để chọn hàng loạt',
+      '✏️ Sửa tên gợi nhớ trực tiếp từ ChatHeader - popup sửa alias nhanh, đồng bộ Zalo API',
+      '🎞️ Facebook xử lý hiển thị tin nhắn trích dẫn, video, gif ổn định hơn',
+      '🤖 AI hỗ maxTokens tuỳ chỉnh, suggestions 1000 tokens - sử dụng 9Router mượt mà hơn',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'Kéo chuột chọn nhiều tin nhắn: pointerdown → drag → pointerup để chọn range tin nhắn, suppress click ngay sau drag',
+          'Sửa tên gợi nhớ trực tiếp từ ChatHeader - popup AliasEditPopup, gọi changeFriendAlias + setContactAlias, đồng bộ realtime',
+          'Ghim hội thoại local cho Facebook & các kênh không có Zalo API pin - dùng local_pinned_conversations, hiển thị trong GroupInfoPanel + ConversationInfo',
+        ],
+      },
+      {
+        category: 'improved',
+        items: [
+          'Facebook GIF: phát hiện GifPlayback từ E2EE bridge (Go events.go), hiển thị GIF animation thay vì ảnh tĩnh, xử lý ảnh gửi trong container video (mimeType image/)',
+          'Facebook video: loading timeout 8s với thông báo "Tải thất bại", skip URL thumbnail ảnh giả (.jpg/.png), fallback att_* keys từ downloadNonE2EEAttachments',
+          'Facebook pre-fetch contact info: tự động lấy display_name + avatar từ HTML trước khi broadcast fb:onMessage, FE fallback nếu BE fetch fail',
+          'Facebook contact info trong broadcast: gửi kèm contactName + contactAvatar để UI không hiển thị UID/avatar trống',
+          'Facebook E2EE: await handleIncomingMessage trước khi download media - tránh race event:localPath đến trước message store',
+          'Facebook E2EE bridge buffer: tăng 1MB → 50MB hỗ trợ E2EE media download (FB limit ~25MB/file)',
+          'Facebook ensureConnected: safety net listener alive sai status, thêm waitForListenerReady async poll, không reconnect khi MQTT thực sự alive',
+          'Facebook session: REQUIRED_SESSION_FIELDS validate trong initSession, throw error nếu thiếu FacebookID',
+          'Facebook sendMessage: detect 1:1 bằng numeric threadId, parse structured AI response giống zalo.sendMessage',
+          'Facebook download: Referer facebook.com cho FB CDN (tránh 403), DEBUG_DOWNLOAD logging chi tiết',
+          'AI: parse response đa format (OpenAI chat completions, Completions API text, flat content, custom response), log debug keys nếu response empty',
+          'AI: truyền maxTokens qua ai:chat IPC, WorkflowAIDialog dùng maxTokens=5000, suggestions tăng 500→1000 tokens',
+          'Workflow Facebook send: parse structured AI response (JSON segments), auto-resolve typeChat từ trigger context',
+          'AI Assistant product dedup: tránh duplicate ID trong cùng batch khi ghim sản phẩm',
+          'Contact alias relay: chuyển persist alias lên trước persistRelayConversationEvent, forward trực tiếp đến renderer',
+          'ZaloEvents guard: fetchContactInfo và refreshContactAlias chỉ chạy cho Zalo contacts',
+        ],
+      },
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi hiển thị UID thay vì tên trên tin nhắn Facebook mới - pre-fetch contact info trước broadcast, FE fallback',
+          'Sửa lỗi race condition E2EE media download: event:localPath đến trước khi message có trong store → local_paths bị mất, video không play được',
+          'Sửa lỗi quote_data bị mất khi MQTT echo đến trước persistSentMessage - merge quote_data trong chatStore',
+          'Sửa lỗi Facebook group bridge attachments không parse được - parse attachments array từ bridge data cho non-E2EE group messages',
+          'Sửa lỗi alias không đồng bộ qua relay cho nhân viên - sắp xếp thứ tự xử lý channel, forward trực tiếp',
+          'Sửa lỗi AI chat không parse được response từ server không chuẩn OpenAI format - thêm fallback các format khác',
+          'Sửa lỗi E2EE ảnh gửi trong container video không hiển thị - Go bridge detect mimeType image/ trong video container',
+          'Sửa lỗi Facebook MQTT attachment ID âm (0, -1, -2) - synthetic ID dùng negative index thay vì hardcode 0',
+          'Sửa lỗi Facebook group video không tải được - fallback att_* keys khi tìm local_paths',
+          'Sửa lỗi E2EE download lỗi âm thầm - catch + log chi tiết, thông báo bridge không hỗ trợ media type',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.6.4',
+    date: '06/2026',
+    type: 'minor',
+    highlights: [
+      '👤 Tự động refresh avatar Zalo khi khởi động - avatar không còn bị mờ/thiếu do CDN hết hạn',
+      '✏️ Facebook E2EE: hỗ trợ xem lịch sử chỉnh sửa tin nhắn - đánh dấu "đã chỉnh sửa" + nút "Xem nội dung cũ"',
+      '📞 Gợi ý danh thiếp Zalo từ SĐT trong khung chat - gõ số 0xx, tự động tra cứu và gửi danh thiếp khi Enter',
+      '🖼️ Danh thiếp Zalo cải tiến - nút "Kết bạn" trực tiếp, chọn được số điện thoại, click avatar mới mở profile',
+      '🚫 Facebook: admin message (pin, poll, đổi tên nhóm) hiển thị đúng dạng thông báo hệ thống',
+      'ℹ️ Tự động fetch thông tin user khi vào hội thoại mới - không còn thấy "Unknown" hay avatar mặc định',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'Avatar Zalo tự động refresh khi khởi động app - kiểm tra avatar URL còn hạn không (HTTP HEAD), nếu expired thì gọi Zalo API lấy URL mới, cập nhật cả tên hiển thị',
+          'Facebook E2EE: hỗ trợ tin nhắn đã chỉnh sửa - lưu edit history, DB migration thêm cột edit_history + is_edited, IPC event fb:onEdit',
+          'Gợi ý danh thiếp Zalo khi gõ SĐT trong khung chat - detect pattern 0xx, debounce 800ms, tra cứu local DB + Zalo findUser API + getUserInfo, Enter để gửi danh thiếp thay vì text',
+          'Nút "Kết bạn" trên danh thiếp Zalo - kiểm tra trạng thái bạn bè (isFr/is_friend), gửi lời mời trực tiếp với tin nhắn mặc định',
+          'Facebook E2EE: xử lý unsend tin nhắn mã hoá - lưu nội dung gốc vào recalled_content',
+        ],
+      },
+      {
+        category: 'improved',
+        items: [
+          'Tự động fetch tên + avatar khi vào hội thoại mới thiếu thông tin (Zalo & Facebook) - áp dụng cho ChatHeader, ConversationInfo, và deep link/notification',
+          'Danh thiếp Zalo: click avatar mới mở profile (không block select text), hiển thị SĐT dùng PhoneDisplay (selectable)',
+          'Refresh alias dùng getAliasList (count=5000) thay vì gọi getUserInfo từng user - nhanh hơn, không tốn quota API',
+          'Facebook E2EE unsend: lưu nội dung gốc vào recalled_content để user có thể xem lại',
+          'Facebook: admin message (pin, poll, group info changes) hiển thị dạng system notification centered thay vì chat bubble',
+          'Cập nhật contact alias ngay lập tức trong Zustand store khi nhận từ employee relay - không cần chờ refresh',
+          'Load contacts từ DB khi nhận deep link - tránh hiển thị danh sách trống trước khi kịp load',
+        ],
+      },
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi admin text Facebook (pin, poll, đổi tên nhóm) hiển thị thành message bình thường - giờ là centered system notification',
+          'Sửa lỗi avatar Zalo bị mờ/thiếu khi CDN URL hết hạn - tự động HEAD check + refresh khi startup',
+          'Sửa lỗi không hiển thị tên contact khi vào hội thoại từ deep link / thông báo desktop - tự động fetch ngay sau khi navigate',
+          'Sửa lỗi Facebook alias không được update Zustand store khi nhận từ relay server',
+          'Sửa lỗi nhân viên click vào hội thoại không hiển thị tin nhắn (báo "Chưa có tin nhắn nào") - thêm zaloId vào params getMessageHistory và getUserInfo khi proxy sang Boss, giúp Boss resolve đúng tài khoản Zalo cần dùng',
+          'Sửa lỗi đồng bộ dữ liệu Boss → Nhân viên timeout với nhiều messages - tăng timeout requestFullSync từ 120s lên 600s, tăng timeout deltaSync từ 60s lên 600s',
+          'Sửa lỗi import messages quá chậm (INSERT từng dòng) - batch 200 rows/INSERT, giảm số lần gọi db.exec(), có fallback row-by-row nếu batch lỗi',
+          'Sửa lỗi sync thất bại im lặng - thêm retry 3 lần tự động + log lỗi chi tiết nếu sync không hoàn tất',
+          'Sửa lỗi upload media qua tunnel timeout với ảnh lớn - tăng timeout uploadMedia từ 60s lên 120s',
+          'Sửa lỗi upload nhiều ảnh/ file tuần tự - chuyển sang upload song song (Promise.all)',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.6.3',
+    date: '06/2026',
+    type: 'minor',
+    highlights: [
+      '🐧 Hỗ trợ Ubuntu Linux (.AppImage + .deb) - CI/CD build tự động',
+      '📡 Kết nối Facebook ổn định hơn - tự động reconnect khi mất kết nối, timeout guard 15s',
+      '🤖 Workflow Zalo & Facebook gửi tin đến nhiều hội thoại cùng lúc, AI gợi ý thông minh hơn',
+      '📹 Xem video Facebook inline ngay trong chat - tách riêng với video Zalo',
+      '📤 Zalo nhân viên: tự động upload file ảnh/video/voice lên boss trước khi proxy',
+      '🐛 Sửa lỗi gửi tin Facebook 1:1, E2EE bridge timeout, video Zalo hiển thị sai',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          '🐧 Hỗ trợ Ubuntu/Linux - build AppImage + .deb, CI/CD tự động trên GitHub Actions, hướng dẫn cài đặt cho Linux trong README',
+          '📹 Xem video Facebook inline ngay trong khung chat (FacebookVideoBubble) - không cần mở ứng dụng ngoài, hỗ trợ E2EE video',
+          '➕ Kết bạn Zalo trực tiếp từ kết quả tra cứu số điện thoại trong thanh tìm kiếm toàn cục',
+          '📦 Script build bridge E2EE đa nền tảng (build-bridge-e2ee.js) - tự động clone mautrix/meta, build cho Windows/Linux/macOS',
+        ],
+      },
+      {
+        category: 'improved',
+        items: [
+          '📡 Facebook: tự động reconnect khi service bị mất khỏi ConnectionManager (getFBServiceOrReconnect) - không còn lỗi "Account not connected" khi mạng drop rồi online lại',
+          '⏱️ Facebook: timeout guard 15s cho gửi tin nhắn qua IPC - UI không bị treo vô hạn khi MQTT/API treo',
+          '🔄 Facebook gửi tin nhắn: routing thông minh - 1:1 ưu tiên E2EE bridge, group ưu tiên bridge MQTT, REST fallback',
+          '✅ Facebook ensureConnected() trước khi gửi - tránh gửi request qua kết nối đã chết',
+          '📤 Workflow Facebook: gửi text/ảnh đến nhiều hội thoại cùng lúc (threadIds array), hỗ trợ continueOnError',
+          '📤 Workflow Zalo: gửi message/image/file đến nhiều hội thoại cùng lúc (threadIds), hỗ trợ continueOnError',
+          '🤖 AI gợi ý tin nhắn: prompt instruction rõ ràng hơn, thêm fallback split câu nếu AI trả sai format',
+          '🔧 9Router AI: base URL placeholder sửa đúng (bỏ /v1) - tương thích với proxy 9Router',
+          '🔄 Workflow: phát hiện cycle trong topological sort - log cảnh báo node bị skip',
+          '🌐 Zalo IPC: resolveZaloId fallback khi auth không có cookies - gửi tin nhắn nhanh vẫn hoạt động',
+          '📤 Zalo IPC Employee: tự động upload file media (ảnh, video, voice) từ máy nhân viên lên boss trước khi proxy - file cục bộ của nhân viên không tồn tại trên boss',
+          '📦 Bridge E2EE: cập nhật dependencies (mautrix v0.28.1, libsignal v0.2.2, whatsmeow mới nhất)',
+        ],
+      },
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi gửi tin nhắn Facebook 1:1 không qua E2EE bridge khi thread chưa được đánh dấu E2EE',
+          'Sửa lỗi Facebook E2EE bridge connect timeout quá dài (120s → 30s) - không block group messaging',
+          'Sửa lỗi upload attachment Facebook timeout (120s → 60s) - giảm thời gian chờ khi upload',
+          'Sửa lỗi workflow Facebook sendImage không gửi được ảnh đến nhiều thread (thiếu vòng lặp)',
+          'Sửa lỗi video Zalo bị ảnh hưởng bởi logic Facebook video - tách riêng ZaloVideoBubble và FacebookVideoBubble',
+          'Sửa lỗi MessageInput không gửi được text và ảnh Facebook (chỉ hỗ trợ Zalo)',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.6.2',
+    date: '06/2026',
+    type: 'minor',
+    highlights: [
+      '🔐 Đăng nhập Facebook bằng tài khoản + mật khẩu + xác thực 2FA - không cần cookie',
+      '🔔 Cài đặt thông báo và âm thanh riêng theo từng tài khoản - không cần chung tất cả',
+      '📡 Kết nối Facebook ổn định hơn - cải thiện duy trì phiên hoạt động',
+      '🤖 Trợ lý AI tích hợp thêm OpenRouter - thêm lựa chọn model AI giá rẻ hoặc miễn phí (author kungfu321)',
+      '🐛 Sửa lỗi kết nối model AI Free ở 9Router, workflow chuyển tiếp Zalo, xoá tài khoản còn sót kết nối, và kết nối Sapo',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'Đăng nhập Facebook qua tài khoản + mật khẩu + secretKey 2FA - hỗ trợ xác thực hai yếu tố, không cần phải lấy cookie thủ công',
+          'Cài đặt thông báo góc màn hình và âm thanh theo từng tài khoản riêng biệt - mỗi tài khoản có thể tuỳ chỉnh thông báo riêng thay vì áp dụng chung một cấu hình cho tất cả',
+        ],
+      },
+      {
+        category: 'improved',
+        items: [
+          'Cải thiện duy trì kết nối Facebook ổn định hơn - giảm tình trạng mất kết nối và tự động phục hồi tốt hơn',
+        ],
+      },
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi kết nối đến một số model AI Free ở 9Router không hoạt động',
+          'Sửa lỗi workflow Zalo node chuyển tiếp không chuyển tiếp được tin nhắn & hình ảnh',
+          'Sửa lỗi đã xoá tài khoản trong Cài đặt nhưng vẫn còn kết nối ngầm',
+          'Sửa lỗi kết nối Sapo và cải thiện một số lỗi API tích hợp',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.6.1',
+    date: '06/2026',
+    type: 'hotfix',
+    changes: [
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi production build không đóng gói được E2EE bridge binary',
+          'Script production giờ tự động build bridge trước khi đóng gói',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.6.0',
+    date: '06/2026',
+    type: 'major',
+    highlights: [
+      '🤖 Hỗ trợ kênh chat Facebook Messenger (repo fbchat-v2) - đọc/gửi tin nhắn kể cả mã hoá đầu cuối',
+      '⚡ Workflow mở rộng - hỗ trợ triggers và actions mới cho Facebook',
+      '📊 CRM Quét dữ liệu Facebook - tìm kiếm nhóm, fanpage, bài viết theo từ khoá, quét bình luận, thành viên nhóm, thống kê & xuất Excel',
+      '🤖 Trợ lý AI tích hợp thêm 9Router - dịch vụ proxy API AI cho phép bạn gọi các model giá rẻ hoặc miễn phí.',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'Facebook E2EE Bridge - binary Go (fbchat-bridge-e2ee.exe) xử lý mã hoá đầu cuối, build tự động qua predev',
+          'Facebook E2EE: đọc & gửi tin nhắn, media, sticker, reactions trong hội thoại mã hoá',
+          'Facebook: đăng nhập bằng cookie (bỏ beta), hướng dẫn lấy cookie + cảnh báo hết hạn',
+          'Facebook: block/unblock user, đổi theme, tạo note, làm mới thông tin user từ HTML (tên + avatar)',
+          'Facebook: upload attachment dùng manual multipart body (sửa lỗi 0KB), tải hội thoại cũ',
+          'Facebook: FBUserProfilePopup, FBVideoThumb, AccountAssignmentPopup',
+          'CRM Quét dữ liệu Facebook: tìm kiếm nhóm/fanpage/bài viết theo từ khoá, quét thành viên nhóm, bình luận bài viết',
+          'CRM Scan: auto-pagination với mục tiêu số lượng, batch scan nhiều ID cùng lúc, thread pool',
+          'CRM Scan: tab-based sessions - tạo nhiều tab quét, lưu cấu hình & kết quả, xem lịch sử, xuất Excel',
+          'CRM Scan: bộ lọc nâng cao - public groups, recent posts, lọc theo năm, từ khoá bình luận, phát hiện SĐT',
+          'CRM Scan: thống kê tổng quan - biểu đồ tròn tỷ lệ thành công, thanh so sánh, top tab nhiều dữ liệu, thống kê theo loại quét',
+          'CRM Scan: giao diện Chrome-style tabs, tối đa 5 tab hiển thị + overflow menu, đổi tên, lưu trữ, xoá tab',
+          'Workflow: Facebook triggers (message, friend request, group, reaction,...) & actions mới',
+          'Workflow: TemplateVarPopup - chọn biến động từ danh sách template variables',
+          'Workflow: mở rộng workflow templates và workflow config',
+          'Hệ thống models module mới - account, ai, contact, crm, employee, facebook, integration, message, proxy, workflow',
+          'Integration: Sửa lại giao diện và logic tích hợp AI platforms, thêm 9Router',
+          'channelConfig & channelIpc - cấu hình theo từng nền tảng (Zalo, Facebook, Telegram)',
+          'useChannelCapability hook - kiểm tra tính năng theo channel',
+          'Trang Donate trong IntroductionSettings',
+        ],
+      },
+      {
+        category: 'improved',
+        items: [
+          'Workflow Engine mở rộng - xử lý Facebook events, friend request, reaction, poll, group events',
+          'NodeConfigPanel - cấu hình node Facebook, template variables, HTML editor, contact picker',
+          'CRM Queue: daily_start_time tách riêng khỏi daily_send_limit, áp dụng cho mọi chiến dịch',
+          'CRM CampaignCreateModal: UI daily start time luôn hiển thị, logic cải tiến',
+          'CRM CampaignDetail & TargetSelector: dedup phone+UID, tránh trùng SĐT/UID khi import',
+          'IntegrationPage thiết kế lại - section AI platforms, saved integrations cải tiến',
+          'AIAssistantService cập nhật - hỗ trợ nhiều platform AI',
+          'IntroductionSettings: tách tích hợp thành POS/thanh toán/vận chuyển/AI, thêm Donate',
+          'ChatHeader: làm mới avatar Facebook từ CDN, reload thông tin user từ HTML',
+          'MessageInput: hỗ trợ Facebook, cập nhật UI',
+          'ChatWindow: hỗ trợ Facebook E2EE, cập nhật giao diện',
+          'GroupInfoPanel: xử lý Facebook group',
+          'TopBar: cập nhật giao diện, hỗ trợ Facebook',
+          'EmployeeService: cập nhật đồng bộ cho Facebook',
+          'HttpRelayService & HttpClientService: hỗ trợ relay Facebook events',
+          'appStore: thêm trạng thái cho Facebook',
+        ],
+      },
+      {
+        category: 'fixed',
+        items: [
+          'Facebook attachment upload lỗi 0KB do form-data không tương thích - dùng manual multipart body',
+          'CRM: sửa lỗi phone resolve treo vô hạn (thêm timeout 15s)',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.4.8',
+    date: '06/2026',
+    type: 'minor',
+    highlights: [
+      '📡 Nâng cấp kết nối Boss ↔ Nhân viên - ổn định hơn, tự khôi phục khi mất kết nối, đồng bộ realtime',
+      '🔧 Sửa lỗi workflow chấp nhận & từ chối kết bạn không hoạt động đúng',
+    ],
+    changes: [
+      {
+        category: 'improved',
+        items: [
+          'Kết nối Boss ↔ Nhân viên ổn định hơn: tự động phát hiện mất kết nối ngầm và khôi phục, giảm tình trạng nhân viên bị "mất liên lạc" mà không biết',
+          'Fallback qua LAN: khi WAN/tunnel gặp sự cố, nhân viên vẫn nhận dữ liệu qua mạng nội bộ nếu cùng mạng',
+          'Đồng bộ realtime nhãn, ghim tin, tin nhắn nhanh, chiến dịch CRM và ghi chú liên hệ giữa máy boss và nhân viên',
+        ],
+      },
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi workflow không thực thi đúng khi trigger là "Lời mời kết bạn" - chấp nhận và từ chối kết bạn giờ hoạt động bình thường',
+          'Sửa lỗi tin nhắn ghim không đồng bộ giữa boss và nhân viên khi ghim/bỏ ghim'
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.4.7',
+    date: '06/2026',
+    type: 'minor',
+    highlights: [
+      '🔗 Chiến dịch CRM: thêm mới chọn đối tượng theo UID trực tiếp',
+      '🔄 Tải lại biệt danh (alias) - nút reload trên header và tự động tìm alias mỗi ngày',
+      '📊 Log chiến dịch chi tiết hơn - lưu response và lỗi từng block',
+      '📡 Nâng cấp kết nối SSE - exponential backoff, tự reconnect khi mất kết nối',
+      '📖 Hướng dẫn sử dụng & báo lỗi mới - truy cập nhanh từ TopBar',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'Chiến dịch CRM: thêm mode chọn đối tượng theo UID - nhập danh sách UID trực tiếp, tra cứu tên khi gửi',
+          'Tải lại biệt danh: nút reload alias trên ChatHeader và ConversationInfo panel cho hội thoại 1-1 trên Zalo',
+          'Tự động refresh alias nền mỗi 24 giờ khi mở hội thoại - giữ biệt danh luôn cập nhật',
+          'Auto-fetch thông tin liên hệ khi mở hội thoại chỉ có UID (chưa có tên/avatar) - tự động lấy từ API',
+          'Tự động tải lại dữ liệu (contacts, flags) sau khi đồng bộ full/delta từ workspace khác',
+          'Dashboard: thêm tooltip giải thích cho nút Gộp tài khoản, Thêm workspace và Hỗ trợ khi rê chuột',
+          'TopBar: thêm nút truy cập nhanh Hướng dẫn sử dụng và Báo lỗi',
+          'Trang Hướng dẫn báo lỗi mới (Cài đặt → Giới thiệu → Hướng dẫn báo lỗi) - quy trình 5 bước với ví dụ mẫu',
+          'Health check tự động cho workspace từ xa - kiểm tra và reconnect mỗi 60 giây',
+        ],
+      },
+      {
+        category: 'improved',
+        items: [
+          'Nâng cấp kết nối SSE: exponential backoff (3s → 30s cap), tự reconnect khi heartbeat fail 2 lần liên tiếp',
+          'Log chiến dịch CRM: lưu chi tiết API response và error message từng block vào send history',
+          'CSV export: SĐT và UID không bị Excel chuyển thành scientific notation (ép dạng text ="...")',
+          'Lọc danh sách @mention - ẩn thành viên không có tên hiển thị khỏi gợi ý nhắc đến',
+          'Chế độ nhân viên ổn định hơn: không tự kết nối Zalo ở workspace remote, boss sở hữu toàn bộ kết nối',
+          'Điều hướng Settings: sửa thứ tự dispatch sự kiện để tab và subtab mở đúng',
+          'Thanh nhãn local: nút đóng (X) và bố cục gọn hơn, mũi tên expand/collapse chuyển sang bên phải',
+        ],
+      },
+      {
+        category: 'fixed',
+        items: [
+          'Sửa click vào ảnh trong nhóm (SingleImageInGroup) không mở được trình xem ảnh',
+          'Sửa lỗi điều hướng từ Dashboard/WorkspaceSwitcher sang Settings tab sai (dispatch chưa đúng thứ tự)',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.4.6',
+    date: '06/2026',
+    type: 'minor',
+    highlights: [
+      '📊 Giới hạn gửi chiến dịch theo ngày - tự động dừng khi đạt giới hạn, hẹn giờ chạy tiếp ngày sau',
+      '🔧 Sửa lỗi chiến dịch gửi ảnh không thành công',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'Giới hạn số liên hệ gửi/ngày cho chiến dịch CRM - cài đặt số lượng tối đa và giờ bắt đầu chạy, tự động dừng khi đạt giới hạn và tiếp tục vào ngày mới. Nếu giờ đã qua hôm nay, chiến dịch chạy ngay.',
+        ],
+      },
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi chiến dịch CRM có nội dung ảnh (ảnh + text hoặc chỉ ảnh) không gửi được ảnh',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.4.5',
+    date: '06/2026',
+    type: 'minor',
+    highlights: [
+      '🔒 khoá màn hình - bảo vệ ứng dụng bằng mật khẩu, sinh trắc học và recovery key',
+      '☑️ Chọn nhiều tin nhắn - chọn và chuyển tiếp/sao chép nhiều tin cùng lúc',
+      '🖼️ Tự động sửa ảnh lỗi - ảnh hỏng được tải lại ngầm, không cần thao tác',
+      '📞 CRM nhập SĐT nhanh hơn - không cần chờ tra cứu, tự động xử lý khi gửi',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'Khoá màn hình: đặt mật khẩu bảo vệ ứng dụng, phím tắt Ctrl+Shift+L để khoá nhanh, nút khoá trên thanh tiêu đề',
+          'Chọn nhiều tin nhắn: nhấn chuột phải → "Chọn tin nhắn" để chọn nhiều tin, sau đó sao chép hoặc chuyển tiếp hàng loạt',
+          'Chuyển tiếp nhiều tin cùng lúc: chọn nhiều tin nhắn và nhiều người nhận, gửi lần lượt tự động',
+          'Tự động phát hiện và sửa ảnh bị lỗi (ảnh trắng, 0 byte, nội dung HTML) khi mở cuộc trò chuyện',
+          'Hiển thị thông báo khi ẩn ứng dụng xuống tray - cho biết app vẫn chạy ngầm và nhận tin nhắn',
+        ],
+      },
+      {
+        category: 'improved',
+        items: [
+          'Chiến dịch CRM: nhập số điện thoại nhanh hơn - không cần chờ tra cứu Zalo, tự động tìm người dùng khi gửi chiến dịch',
+          'Chiến dịch CRM: gửi nhiều nội dung báo lỗi chính xác hơn - biết block nào gửi thành công, block nào thất bại',
+          'Cài đặt bảo mật: Cài mật khẩu, Recovery Key, Tắt khoá',
+          'Khi lưu ảnh về máy mà file bị lỗi, tự động tải lại từ url gốc để đảm bảo file lưu ra không bị hỏng',
+          'Nhấp vào thông báo desktop mở đúng cuộc trò chuyện ổn định hơn',
+          'Ngữ cảnh AI: tăng giới hạn lên 1000 tin nhắn thay vì 100',
+          'Workflow: hỗ trợ biến thời gian (HH:MM) trong điều kiện so sánh lớn hơn / nhỏ hơn',
+          'Workflow: import/template tự động cập nhật liên kết giữa các node',
+        ],
+      },
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi ảnh hiển thị trắng hoặc xoay mãi khi zoom do file ảnh bị hỏng',
+          'Sửa lỗi lưu ảnh về máy (Save As) không khắc phục được file đã lỗi',
+          'Sửa lỗi nhấp thông báo tin nhắn đôi khi không mở được cuộc trò chuyện',
+          'Sửa lỗi biến workflow không đúng khi dùng node AI trợ lý',
+          'Sửa lỗi Cloudflare Tunnel và ffmpeg không hoạt động trên bản cài đặt (asar)',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.4.4',
+    date: '06/2026',
+    type: 'minor',
+    highlights: [
+      '💬 Nâng cấp chuyển tiếp tin nhắn - hỗ trợ mọi loại, thêm soạn text kèm',
+      '📊 Chiến dịch CRM thông minh hơn - auto load thông tin từ tệp số điện thoại',
+      '🤖 Bổ sung Gemini 3.5 & DeepSeek V4, AI template trực quan hơn',
+    ],
+    changes: [
+      {
+        category: 'improved',
+        items: [
+          'Chuyển tiếp tin nhắn: hỗ trợ toàn bộ loại tin nhắn (text, ảnh, file, video) thay vì chỉ text như trước, thêm ô soạn text kèm khi chuyển tiếp',
+          'Chiến dịch CRM: tự động tra cứu và load thông tin khách hàng khi chọn tệp số điện thoại',
+          'Log lịch sử gửi tin CRM: bổ sung cột số điện thoại bên cạnh tên khách hàng',
+          'Thẻ AI trả lời: thiết kế lại giao diện cài đặt trực quan, dễ thao tác hơn',
+          'Cập nhật danh sách model AI: thêm Gemini 3.5 Flash và DeepSeek V4',
+        ],
+      },
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi chuyển tiếp tin nhắn không hoạt động với file, ảnh, video',
+          'Sửa lỗi không duyệt được thành viên nhóm Zalo',
+          'Sửa lỗi copy ảnh vào clipboard không hoạt động với ảnh remote',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.4.3',
+    date: '05/2026',
+    type: 'minor',
+    highlights: [
+      '🌐 Kết nối nhân viên qua WAN - boss và nhân viên giờ có thể làm việc từ bất kỳ đâu, không chỉ cùng mạng LAN',
+      '🔒 Nâng cấp quản lý Proxy - chọn proxy riêng cho từng tài khoản trước khi đăng nhập',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'Hỗ trợ kết nối nhân viên qua WAN: Boss bật Cloudflare Tunnel - app tự tạo URL công khai an toàn, nhân viên nhập URL đó để kết nối từ xa mà không cần cùng mạng nội bộ',
+          'Thêm nút "Bật Tunnel WAN" trong Cài đặt → Nhân viên → Relay Server - một click để tạo địa chỉ truy cập từ xa',
+          'Thêm màn hình cài đặt Proxy trước khi đăng nhập tài khoản Zalo - hỗ trợ HTTP, HTTPS và SOCKS5',
+          'Mỗi tài khoản Zalo có thể gán proxy độc lập - không ảnh hưởng đến các tài khoản khác trong cùng app, một proxy có thể gắn nhiều tài khoản.',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.4.2',
+    date: '05/2026',
+    type: 'patch',
+    highlights: [
+      '👥 Nâng cấp CRM: rời nhiều nhóm cùng lúc và tham gia nhóm từ link mời',
+      '🐛 Sửa lỗi quét thành viên nhóm và thống kê tin nhắn theo giờ',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'Thêm hành động rời nhiều nhóm hàng loạt trong tab Liên hệ CRM',
+          'Thêm nút tham gia nhóm trực tiếp từ kết quả quét link nhóm',
+        ],
+      },
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi phân trang khi quét thành viên từ link nhóm - giờ quét đủ toàn bộ thành viên thay vì chỉ dừng ở 100',
+          'Sửa lỗi biểu đồ Tin nhắn theo giờ trong Báo cáo không hiển thị số liệu',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.4.1',
+    date: '05/2026',
+    type: 'patch',
+    highlights: [
+      '🚀 Chiến dịch gửi tin hàng loạt nâng cấp: hỗ trợ soạn ảnh, gửi nhiều tin trong một lần và random nội dung',
+      '🐛 Sửa một số lỗi liên quan đến chat và xem ảnh',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'Chiến dịch gửi tin hàng loạt hỗ trợ soạn thêm tin nhắn kèm ảnh',
+          'Gửi nhiều tin nhắn trong một lượt chiến dịch',
+          'Tính năng random nội dung giúp tin nhắn tự nhiên hơn, giảm trùng lặp',
+        ],
+      },
+      {
+        category: 'fixed',
+        items: [
+          'Sửa lỗi thanh gợi ý sticker khi chat - cuộn chuột trên thanh sticker giờ trượt ngang tự nhiên',
+          'Sửa lỗi hiển thị ảnh trong tin nhắn - giảm hiện tượng giật/nháy khi tải ảnh',
+          'Sửa lỗi trình xem ảnh - không còn nháy khi mở, kéo ảnh để zoom không còn tự đóng hộp thoại',
+        ],
+      },
+    ],
+  },
+  {
+    version: '26.4.0',
+    date: '04/2026',
+    type: 'major',
+    highlights: [
+      '🚀 Ra mắt Deplao - nền tảng desktop vận hành bán hàng và chăm sóc khách hàng trên Zalo trong một ứng dụng duy nhất',
+      '👤 Quản lý đa tài khoản Zalo, gộp nhiều tài khoản vào một hộp thư tập trung để xử lý hội thoại nhanh hơn',
+      '👥 Tích hợp CRM, Campaign, Workflow, AI, Báo cáo và Tích hợp ngoài để vận hành khép kín ngay trên desktop',
+      '🗂️ Bổ sung ERP nội bộ, quản lý nhân viên & workspace để boss và team phối hợp ngay trong cùng hệ thống',
+      '🔒 Kiến trúc lưu dữ liệu cục bộ, đăng nhập bằng QR, ưu tiên bảo mật và quyền kiểm soát dữ liệu cho người dùng',
+    ],
+    changes: [
+      {
+        category: 'new',
+        items: [
+          'Ra mắt Dashboard quản lý tài khoản: theo dõi trạng thái online/offline, listener, reconnect nhanh, tìm kiếm và sắp xếp tài khoản ngay trên màn hình chính',
+          'Hỗ trợ đăng nhập và quản lý nhiều tài khoản Zalo bằng QR Code trong cùng một app, lưu phiên cục bộ an toàn và chuyển đổi tài khoản tức thì',
+          'Thêm chế độ Gộp tài khoản để xem và xử lý hội thoại từ nhiều Zalo trong một inbox hợp nhất, kèm bộ lọc, tìm kiếm và nhận diện tài khoản sở hữu từng hội thoại',
+          'Ra mắt hộp thư tập trung với bộ lọc Tất cả / Chưa đọc / Chưa trả lời / Khác / Theo nhãn, hỗ trợ tìm kiếm theo tên, biệt danh và số điện thoại',
+          'Trang chat hỗ trợ đầy đủ thao tác quan trọng: định dạng văn bản, emoji, sticker, gửi ảnh/video/file, reply, tag thành viên, tạo poll, ghi chú nhóm, nhắc nhở và gửi danh thiếp',
+          'Thêm Quick Messages không giới hạn để lưu mẫu tin nhắn, gọi nhanh bằng từ khóa và dùng được cho các tình huống tư vấn lặp lại hàng ngày',
+          'Hỗ trợ ghim không giới hạn tin nhắn trong hội thoại, Group Board tổng hợp ghim / ghi chú / bình chọn và panel quản lý media, video, file đính kèm',
+          'Ra mắt CRM đồng bộ bạn bè Zalo, thành viên nhóm, hồ sơ liên hệ, số điện thoại, giới tính, ngày sinh, nhãn và ghi chú nội bộ trong cùng một nơi',
+          'Cho phép quản lý nhãn Zalo hai chiều: tạo, đổi tên, xóa, gán/gỡ nhãn, lọc theo nhiều nhãn và dùng nhãn làm điều kiện cho workflow',
+          'Bổ sung quét thành viên nhóm nâng cao, quét nhóm lớn / nhóm ẩn / nhóm chưa tham gia từ link mời để phục vụ CRM và chiến dịch',
+          'Ra mắt Campaign gửi tin hàng loạt với nhiều loại hành động như gửi tin, kết bạn, mời vào nhóm, chạy hỗn hợp; có delay, tiến độ realtime, tạm dừng/tiếp tục và log chi tiết',
+          'Ra mắt Workflow Engine kéo-thả không cần code với mô hình Trigger → Node → Action, hỗ trợ chạy nền 24/7 và xem lịch sử chạy để debug',
+          'Workflow hỗ trợ nhiều trigger và action quan trọng: tin nhắn mới, lời mời kết bạn, sự kiện nhóm, react, cron, gửi tin, gửi ảnh/file, tìm user, lấy profile, quản lý nhóm, mute, forward, recall, poll và đọc lịch sử chat',
+          'Tích hợp node Logic, Google Sheets, AI, Telegram, Discord, Email, Notion và HTTP Request để tự động hóa quy trình bán hàng, chăm sóc khách hàng và vận hành nội bộ',
+          'Ra mắt hub Tích hợp với POS, vận chuyển và AI: hỗ trợ KiotViet, Haravan, Sapo, Nhanh.vn, Pancake POS, GHN, GHTK và các trợ lý AI dùng ngay trong chat hoặc workflow',
+          'Bổ sung Báo cáo & Phân tích với nhiều tab: Tổng quan, Tin nhắn, Liên hệ, Nhãn, Chiến dịch, Workflow, AI và Nhân viên để theo dõi hiệu suất vận hành theo thời gian thực',
+          'Ra mắt ERP nội bộ gồm Task, Calendar, Notes và phân quyền ERP để quản lý giao việc, lịch, tài liệu nội bộ và phối hợp vận hành ngay trong Deplao',
+          'Ra mắt mô hình Workspace boss ↔ nhân viên với Relay Server, phân quyền module chi tiết, cấp tài khoản nhân viên và theo dõi báo cáo hiệu suất từng người',
+        ],
+      },
+      {
+        category: 'improved',
+        items: [
+          'Tập trung toàn bộ chat, CRM, workflow, AI, báo cáo và ERP trong một desktop app duy nhất để giảm việc chuyển đổi qua nhiều công cụ khác nhau',
+          'Tối ưu quy trình xử lý hội thoại đa tài khoản bằng sidebar chuyển nhanh, bộ lọc tập trung và cơ chế tự chuyển sang đúng tài khoản khi mở từng hội thoại',
+          'Tăng khả năng chăm sóc khách hàng bằng bộ lọc CRM theo loại liên hệ, nhãn, giới tính, ngày sinh, tương tác cuối và trạng thái chiến dịch',
+          'Nâng cao khả năng phối hợp đội nhóm với mô hình boss quản trị tập trung, nhân viên thao tác trên máy riêng nhưng dữ liệu vẫn đồng bộ về workspace chính',
+          'Tạo nền tảng mở rộng cho bán hàng đa kênh và tự động hóa dài hạn nhờ hệ thống tích hợp, workflow và báo cáo có thể kết hợp linh hoạt theo từng mô hình kinh doanh',
+        ],
+      },
+      {
+        category: 'security',
+        items: [
+          'Áp dụng kiến trúc dữ liệu lưu cục bộ trên máy người dùng: tin nhắn, danh bạ, CRM, cài đặt và media không đi qua server trung gian của hệ thống',
+          'Đăng nhập bằng QR Code, không yêu cầu lưu mật khẩu Zalo; phiên đăng nhập và credential tích hợp được lưu theo cơ chế bảo mật trên máy',
+          'Cho phép đổi thư mục lưu trữ dữ liệu, sao chép dữ liệu tự động khi migrate và chủ động sao lưu để kiểm soát an toàn dữ liệu lâu dài',
+        ],
+      },
+    ],
+  },
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const TYPE_STYLES: Record<VersionEntry['type'], { label: string; cls: string }> = {
+  major:  { label: 'Major',  cls: 'bg-purple-600/30 text-purple-500 border border-purple-500/30' },
+  minor:  { label: 'Minor',  cls: 'bg-blue-600/30 text-blue-500 border border-blue-500/30' },
+  patch:  { label: 'Patch',  cls: 'bg-gray-600/40 text-gray-400 border border-gray-500/30' },
+  hotfix: { label: 'Hotfix', cls: 'bg-red-600/30 text-red-500 border border-red-500/30' },
+};
+
+const CATEGORY_STYLES: Record<string, { icon: React.ReactNode; label: string; cls: string }> = {
+  new:      { icon: <SparklesIcon className="w-4 h-4" />, label: 'Tính năng mới',   cls: 'text-green-400' },
+  improved: { icon: <LightningIcon className="w-4 h-4" />, label: 'Cải thiện',        cls: 'text-blue-400' },
+  fixed:    { icon: <BugIcon className="w-4 h-4" />, label: 'Sửa lỗi',          cls: 'text-amber-400' },
+  removed:  { icon: <TrashIcon className="w-4 h-4" />, label: 'Đã xóa',           cls: 'text-red-400' },
+  security: { icon: <LockIcon className="w-4 h-4" />, label: 'Bảo mật',          cls: 'text-purple-400' },
+};
+
+// ─── Main component ───────────────────────────────────────────────────────────
+export default function ChangelogSettings() {
+  const [expandedVersions, setExpandedVersions] = useState<Set<string>>(
+    new Set([CHANGELOG[0]?.version]) // expand latest by default
+  );
+
+  const toggle = (version: string) => {
+    setExpandedVersions(prev => {
+      const next = new Set(prev);
+      if (next.has(version)) next.delete(version);
+      else next.add(version);
+      return next;
+    });
+  };
+
+  const expandAll = () => setExpandedVersions(new Set(CHANGELOG.map(v => v.version)));
+  const collapseAll = () => setExpandedVersions(new Set());
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-semibold text-white"><ClipboardListIcon className="w-4 h-4 inline" /> Log phiên bản</h2>
+        <div className="flex gap-2">
+          <button onClick={expandAll}
+            className="text-xs text-gray-400 hover:text-gray-300 transition-colors px-2 py-1 rounded-lg hover:bg-gray-700">
+            Mở rộng tất cả
+          </button>
+          <button onClick={collapseAll}
+            className="text-xs text-gray-400 hover:text-gray-300 transition-colors px-2 py-1 rounded-lg hover:bg-gray-700">
+            Thu gọn
+          </button>
+        </div>
+      </div>
+
+      {/* Latest badge */}
+      <div className="bg-green-900/20 border border-green-700/40 rounded-xl px-4 py-2.5 flex items-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
+        <span className="text-green-300 text-xs font-medium">
+          Phiên bản hiện tại: <strong>v{CHANGELOG[0]?.version}</strong> - {CHANGELOG[0]?.date}
+        </span>
+      </div>
+
+      {/* Entries */}
+      <div className="space-y-3">
+        {CHANGELOG.map((entry, idx) => {
+          const isExpanded = expandedVersions.has(entry.version);
+          const typeStyle = TYPE_STYLES[entry.type];
+          const isLatest = idx === 0;
+
+          return (
+            <div key={entry.version}
+              className={`border rounded-xl overflow-hidden transition-colors ${
+                isLatest ? 'border-blue-700/50 bg-blue-900/10' : 'border-gray-700 bg-gray-800/40'
+              }`}>
+              {/* Header */}
+              <button
+                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors"
+                onClick={() => toggle(entry.version)}
+              >
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${typeStyle.cls}`}>
+                  {typeStyle.label}
+                </span>
+                <span className="text-white font-bold text-sm flex-1">
+                  v{entry.version}
+                  {isLatest && (
+                    <span className="ml-2 text-[11px] bg-green-600/30 text-green-400 border border-green-500/30 px-1.5 py-0.5 rounded-full font-normal align-middle">
+                      Mới nhất
+                    </span>
+                  )}
+                </span>
+                <span className="text-gray-400 text-xs mr-2">{entry.date}</span>
+                <svg
+                  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  className={`text-gray-400 flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+
+              {/* Body */}
+              {isExpanded && (
+                <div className="px-4 pb-4 space-y-3 border-t border-gray-700/50 pt-3">
+                  {/* Highlights */}
+                  {entry.highlights && entry.highlights.length > 0 && (
+                    <div className="bg-gray-700/30 rounded-lg px-3 py-2.5 space-y-1">
+                      {entry.highlights.map((h, i) => (
+                        <p key={i} className="text-gray-200 text-xs font-medium">{h}</p>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Change categories */}
+                  {entry.changes.map((group, gi) => {
+                    const style = CATEGORY_STYLES[group.category];
+                    return (
+                      <div key={gi} className="space-y-1.5">
+                        <p className={`text-xs font-semibold flex items-center gap-1.5 ${style.cls}`}>
+                          <span>{style.icon}</span>
+                          {style.label}
+                        </p>
+                        <ul className="space-y-1 pl-1">
+                          {group.items.map((item, ii) => (
+                            <li key={ii} className="flex items-start gap-2 text-gray-400 text-xs">
+                              <span className="text-gray-400 mt-0.5 flex-shrink-0">-</span>
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

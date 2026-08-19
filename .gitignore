@@ -1,0 +1,16 @@
+node_modules/
+dist/
+dist-electron/
+dist-electron-build/
+agents/
+.history/
+.claude/
+.idea/
+.env
+.env.local
+.env.production
+*.log
+.DS_Store
+tmp/
+docs/
+.vscode/

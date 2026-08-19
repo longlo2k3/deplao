@@ -1,0 +1,1485 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #060a18;
+  --bg-secondary: #0a1020;
+  --bg-card: rgba(13, 26, 58, 0.6);
+  --accent-purple: #6d28d9;
+  --accent-blue: #3b82f6;
+  --accent-glow: #8b5cf6;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--accent-purple);
+  border-radius: 3px;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 50%, #34d399 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-warm {
+  background: linear-gradient(135deg, #f59e0b 0%, #ef4444 50%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass morphism */
+.glass {
+  background: rgba(13, 26, 58, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(107, 114, 255, 0.15);
+}
+
+.glass-hover {
+  transition: all 0.3s ease;
+}
+.glass-hover:hover {
+  background: rgba(13, 26, 58, 0.7);
+  border-color: rgba(139, 92, 246, 0.4);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(109, 40, 217, 0.2);
+}
+
+/* Glow effects */
+.glow-purple {
+  box-shadow: 0 0 30px rgba(109, 40, 217, 0.4), 0 0 60px rgba(109, 40, 217, 0.15);
+}
+
+.glow-blue {
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
+}
+
+/* Button styles */
+.btn-primary {
+  background: linear-gradient(135deg, #6d28d9, #3b82f6);
+  color: white;
+  padding: 0.875rem 2rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #7c3aed, #60a5fa);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.btn-primary:hover::before {
+  opacity: 0.2;
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(109, 40, 217, 0.5);
+}
+.btn-primary span {
+  position: relative;
+  z-index: 1;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-primary);
+  padding: 0.875rem 2rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  cursor: pointer;
+}
+.btn-secondary:hover {
+  background: rgba(109, 40, 217, 0.15);
+  border-color: rgba(139, 92, 246, 0.7);
+  transform: translateY(-2px);
+}
+
+/* Animate on scroll */
+.aos-element {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.aos-element.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.aos-element.delay-1 { transition-delay: 0.1s; }
+.aos-element.delay-2 { transition-delay: 0.2s; }
+.aos-element.delay-3 { transition-delay: 0.3s; }
+.aos-element.delay-4 { transition-delay: 0.4s; }
+.aos-element.delay-5 { transition-delay: 0.5s; }
+.aos-element.delay-6 { transition-delay: 0.6s; }
+
+/* Section divider */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
+}
+
+/* Feature card 3D hover */
+.card-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+.card-3d:hover {
+  transform: perspective(1000px) rotateX(-5deg) rotateY(3deg) translateZ(10px);
+}
+
+/* Pricing card highlight */
+.pricing-featured {
+  background: linear-gradient(135deg, rgba(109, 40, 217, 0.25), rgba(59, 130, 246, 0.15));
+  border-color: rgba(139, 92, 246, 0.6) !important;
+  box-shadow: 0 0 40px rgba(109, 40, 217, 0.25), inset 0 1px 0 rgba(139, 92, 246, 0.3);
+}
+
+/* Step connector */
+.step-connector {
+  height: 2px;
+  background: linear-gradient(90deg, rgba(109, 40, 217, 0.6), rgba(59, 130, 246, 0.6));
+  flex: 1;
+}
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* Dot pulse */
+@keyframes dotPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+}
+.dot-pulse {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #34d399;
+  animation: dotPulse 2s ease-in-out infinite;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Light landing theme - command center / editorial dashboard
+   ───────────────────────────────────────────────────────────── */
+
+.landing-light {
+  --landing-bg: #f7f9fc;
+  --landing-bg-soft: #edf2f7;
+  --landing-card: rgba(255, 255, 255, 0.92);
+  --landing-card-strong: rgba(255, 255, 255, 0.98);
+  --landing-border: rgba(15, 23, 42, 0.08);
+  --landing-border-strong: rgba(15, 23, 42, 0.14);
+  --landing-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+  --landing-shadow-soft: 0 14px 32px rgba(15, 23, 42, 0.06);
+  --landing-text: #0f172a;
+  --landing-muted: #334155;
+  --landing-soft: #64748b;
+  --landing-accent: #1d4ed8;
+  --landing-accent-2: #0f766e;
+  --landing-alert: #b45309;
+  position: relative;
+  min-height: 100vh;
+  color: var(--landing-text);
+  background:
+    linear-gradient(180deg, #fbfdff 0%, #f7f9fc 30%, #f2f6fb 100%);
+  isolation: isolate;
+}
+
+.landing-light::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 96px 96px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.18), transparent 42%);
+  z-index: 0;
+}
+
+.landing-light .glass {
+  background: var(--landing-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--landing-border);
+  box-shadow: var(--landing-shadow-soft);
+}
+
+.landing-light .glass-hover:hover {
+  background: var(--landing-card-strong);
+  border-color: rgba(29, 78, 216, 0.16);
+  transform: translateY(-4px);
+  box-shadow: var(--landing-shadow);
+}
+
+.landing-light .gradient-text {
+  background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 55%, #0891b2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.landing-light .gradient-text-warm {
+  background: linear-gradient(135deg, #92400e 0%, #dc2626 60%, #c026d3 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.landing-light .btn-primary {
+  background: linear-gradient(135deg, #2563eb, #06b6d4);
+  color: #fff;
+  box-shadow: 0 18px 44px rgba(37, 99, 235, 0.24);
+}
+
+.landing-light .btn-primary::before {
+  background: linear-gradient(135deg, #60a5fa, #22d3ee);
+}
+
+.landing-light .btn-primary:hover {
+  box-shadow: 0 22px 54px rgba(6, 182, 212, 0.26);
+}
+
+.landing-light .btn-secondary {
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--landing-text);
+  border: 1px solid var(--landing-border-strong);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+}
+
+.landing-light .btn-secondary:hover {
+  background: #fff;
+  border-color: rgba(29, 78, 216, 0.22);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+}
+
+.landing-light .section-divider {
+  background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.16), transparent);
+}
+
+.landing-light .pricing-featured {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.98));
+  border-color: rgba(29, 78, 216, 0.22) !important;
+  box-shadow: 0 26px 72px rgba(29, 78, 216, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.landing-light .dot-pulse {
+  background: #16a34a;
+}
+
+.landing-light .orbit-shell {
+  position: relative;
+}
+
+.landing-light .orbit-shell::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: min(1120px, calc(100% - 48px));
+  height: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, transparent, rgba(15, 23, 42, 0.08), transparent);
+  pointer-events: none;
+}
+
+.landing-light .orbit-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #0f172a;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.05);
+}
+
+.landing-light .stellar-panel,
+.landing-light .planet-card,
+.landing-light .command-panel {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+  border: 1px solid var(--landing-border);
+  box-shadow: var(--landing-shadow);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.landing-light .stellar-panel::before,
+.landing-light .command-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #0f172a, #1d4ed8, #0f766e);
+  opacity: 0.95;
+}
+
+.landing-light .planet-card:hover,
+.landing-light .command-panel:hover {
+  transform: translateY(-4px);
+}
+
+.landing-light .planet-card::before {
+  content: none;
+}
+
+.landing-light .orbit-grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+.landing-light .planet-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 9999px;
+  padding: 0.42rem 0.85rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #1e293b;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+.landing-light .command-grid {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.landing-light .metric-tile {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(180deg, #ffffff, #f8fafc);
+  padding: 1rem;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+}
+
+.landing-light .mini-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.landing-light .signal-dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 9999px;
+  background: #16a34a;
+  box-shadow: 0 0 0 6px rgba(22, 163, 74, 0.1);
+}
+
+.landing-light .editorial-band,
+.landing-light .feature-bento-primary {
+  border-radius: 1.5rem;
+  border: 1px solid rgba(125, 211, 252, 0.3);
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.98), rgba(6, 182, 212, 0.92));
+  color: white;
+  box-shadow: 0 24px 58px rgba(14, 165, 233, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.landing-light .feature-bento-primary::before {
+  background: linear-gradient(90deg, #34d399, #38bdf8);
+}
+
+.landing-light .feature-bento-primary .planet-chip {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.landing-light .feature-bento-tall {
+  background: linear-gradient(180deg, #ffffff, #edf6ff);
+}
+
+.landing-light .dashboard-stripe {
+  position: absolute;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(29, 78, 216, 0.14), rgba(15, 118, 110, 0.08));
+  filter: blur(1px);
+}
+
+.landing-light .workflow-preview {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background:
+    linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(255, 255, 255, 0.98));
+  padding: 1.25rem;
+}
+
+.landing-light .workflow-preview::after {
+  content: '';
+  position: absolute;
+  inset: auto -10% 6% auto;
+  width: 14rem;
+  height: 14rem;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(96, 165, 250, 0.16), rgba(96, 165, 250, 0));
+  filter: blur(10px);
+  animation: workflowPreviewGlow 6s ease-in-out infinite;
+}
+
+.landing-light .workflow-preview-chip {
+  animation: workflowChipFloat 6.4s ease-in-out infinite;
+}
+
+.landing-light .workflow-preview-chip:nth-child(2) { animation-delay: 0.5s; }
+.landing-light .workflow-preview-chip:nth-child(3) { animation-delay: 1s; }
+.landing-light .workflow-preview-chip:nth-child(4) { animation-delay: 1.5s; }
+.landing-light .workflow-preview-chip:nth-child(5) { animation-delay: 2s; }
+.landing-light .workflow-preview-chip:nth-child(6) { animation-delay: 2.5s; }
+
+.landing-light .workflow-tabs {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.landing-light .workflow-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0.58rem 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #475569;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05);
+  transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease, color 0.24s ease, background 0.24s ease;
+}
+
+.landing-light .workflow-tab:hover {
+  transform: translateY(-2px);
+  border-color: rgba(59, 130, 246, 0.22);
+  color: #0f172a;
+}
+
+.landing-light .workflow-tab.is-active {
+  border-color: rgba(125, 211, 252, 0.3);
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.98), rgba(6, 182, 212, 0.92));
+  color: white;
+  box-shadow: 0 18px 36px rgba(14, 165, 233, 0.18);
+}
+
+.landing-light .workflow-tab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.landing-light .workflow-preview::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.12) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.75), transparent 100%);
+}
+
+.landing-light .workflow-node {
+  position: relative;
+  z-index: 1;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(59, 130, 246, 0.14);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.995), rgba(248, 250, 252, 0.98));
+  box-shadow: 0 18px 42px rgba(37, 99, 235, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  padding: 1rem;
+  transition: transform 0.32s ease, box-shadow 0.32s ease, border-color 0.32s ease;
+}
+
+.landing-light .workflow-node-dark {
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.98), rgba(6, 182, 212, 0.92));
+  color: white;
+  border-color: rgba(125, 211, 252, 0.3);
+  box-shadow: 0 24px 58px rgba(14, 165, 233, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  animation: workflowNodePulse 4.8s ease-in-out infinite;
+}
+
+.landing-light .workflow-stack {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 0.95rem;
+}
+
+.landing-light .workflow-live-spotlight {
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-light .workflow-tab-panel {
+  animation: workflowTabPanelIn 0.38s ease;
+}
+
+.landing-light .workflow-live-spotlight::before {
+  content: '';
+  position: absolute;
+  inset: -18% auto auto -14%;
+  width: 14rem;
+  height: 14rem;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(191, 219, 254, 0.22), rgba(191, 219, 254, 0));
+  filter: blur(12px);
+  animation: workflowSpotlightDrift 6.4s ease-in-out infinite;
+}
+
+.landing-light .workflow-live-pulse {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 9999px;
+  background: #f8fafc;
+  box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+  animation: workflowLivePulse 2s ease-out infinite;
+}
+
+.landing-light .workflow-live-orb {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08));
+  color: white;
+  font-size: 1.45rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 18px 34px rgba(14, 165, 233, 0.18);
+  animation: workflowOrbFloat 4.4s ease-in-out infinite;
+}
+
+.landing-light .workflow-live-meter {
+  position: relative;
+  overflow: hidden;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.landing-light .workflow-live-meter-bar {
+  position: relative;
+  height: 100%;
+  width: 52%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.82), rgba(125, 211, 252, 0.96), rgba(134, 239, 172, 0.92));
+  box-shadow: 0 0 22px rgba(125, 211, 252, 0.32);
+  animation: workflowMeterSweep 3.4s ease-in-out infinite;
+}
+
+.landing-light .workflow-live-meter-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0));
+  transform: translateX(-100%);
+  animation: workflowMeterShine 2.4s linear infinite;
+}
+
+.landing-light .workflow-step-flow {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.landing-light .workflow-step-flow-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.landing-light .workflow-step-card {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 2.7rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.82rem 0.9rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.landing-light .workflow-step-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 1.05rem;
+}
+
+.landing-light .workflow-step-copy {
+  min-width: 0;
+}
+
+.landing-light .workflow-step-group {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.56);
+}
+
+.landing-light .workflow-step-label {
+  margin-top: 0.24rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.landing-light .workflow-step-arrow {
+  flex-shrink: 0;
+  color: rgba(191, 219, 254, 0.78);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.landing-light .workflow-live-result {
+  border-radius: 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.95rem 1rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.landing-light .workflow-stack-item {
+  animation: workflowStackReveal 0.7s ease both;
+}
+
+.landing-light .workflow-stack-item:hover .workflow-node {
+  transform: translateY(-3px);
+  box-shadow: 0 24px 48px rgba(37, 99, 235, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.landing-light .workflow-stack-item:hover .workflow-node-dark {
+  box-shadow: 0 28px 62px rgba(14, 165, 233, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.landing-light .workflow-connector {
+  position: relative;
+  z-index: 1;
+  width: 4px;
+  height: 28px;
+  justify-self: center;
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.34), rgba(20, 184, 166, 0.32));
+}
+
+.landing-light .workflow-connector::after {
+  content: '';
+  position: absolute;
+  top: auto;
+  bottom: -2px;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  border-top: 2px solid rgba(37, 99, 235, 0.48);
+  border-right: 2px solid rgba(37, 99, 235, 0.48);
+  transform: translateX(-50%) rotate(135deg);
+}
+
+.landing-light .workflow-connector-live {
+  overflow: hidden;
+}
+
+.landing-light .workflow-connector-live::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -12px;
+  width: 8px;
+  height: 12px;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(125, 211, 252, 0));
+  transform: translateX(-50%);
+  animation: workflowConnectorFlow 2.2s linear infinite;
+}
+
+.landing-light .workflow-connector-emphasis {
+  height: 32px;
+}
+
+.landing-light .workflow-usecase-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.landing-light .workflow-mini-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.94));
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
+  padding: 1rem;
+  animation: workflowMiniCardReveal 0.7s ease both;
+  transition: transform 0.26s ease, box-shadow 0.26s ease, border-color 0.26s ease;
+}
+
+.landing-light .workflow-mini-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.72), rgba(20, 184, 166, 0.58));
+}
+
+.landing-light .workflow-mini-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(59, 130, 246, 0.24);
+  box-shadow: 0 20px 38px rgba(37, 99, 235, 0.1);
+}
+
+.landing-light .hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.98);
+  padding: 0.55rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.landing-light .hero-cta-button {
+  position: relative;
+  z-index: 1;
+  justify-content: center;
+  min-height: 3.5rem;
+}
+
+.landing-light .hero-github-button {
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.landing-light .hero-download-trigger {
+  width: 100%;
+}
+
+.landing-light .hero-download-trigger > button {
+  width: 100%;
+}
+
+.landing-light .feature-proof-dark {
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.95rem 1rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.landing-light .feature-galaxy-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+  gap: 1.2rem;
+  align-items: stretch;
+}
+
+.landing-light .feature-galaxy-map,
+.landing-light .feature-galaxy-detail {
+  min-height: 42rem;
+}
+
+.landing-light .feature-galaxy-map {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(191, 219, 254, 0.28), transparent 18%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.985), rgba(243, 247, 252, 0.96));
+}
+
+.landing-light .feature-galaxy-map::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgba(148, 163, 184, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+  background-size: 34px 34px, 34px 34px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.22), transparent 60%);
+}
+
+.landing-light .feature-galaxy-map::before {
+  content: '';
+  position: absolute;
+  inset: 8% 10% auto auto;
+  width: 12rem;
+  height: 12rem;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(125, 211, 252, 0.18), rgba(125, 211, 252, 0));
+  filter: blur(12px);
+  animation: featureGalaxyGlow 7s ease-in-out infinite;
+}
+
+.landing-light .feature-galaxy-canvas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.landing-light .feature-orbit-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 9999px;
+  border: 1px solid rgba(59, 130, 246, 0.12);
+  transform: translate(-50%, -50%);
+}
+
+.landing-light .feature-orbit-ring-1 {
+  width: 15rem;
+  height: 15rem;
+}
+
+.landing-light .feature-orbit-ring-2 {
+  width: 23rem;
+  height: 23rem;
+}
+
+.landing-light .feature-orbit-ring-3 {
+  width: 31rem;
+  height: 31rem;
+}
+
+.landing-light .feature-orbit-ring-1 { animation: featureOrbitSpin 22s linear infinite; }
+.landing-light .feature-orbit-ring-2 { animation: featureOrbitSpinReverse 28s linear infinite; }
+.landing-light .feature-orbit-ring-3 { animation: featureOrbitSpin 34s linear infinite; }
+
+.landing-light .feature-galaxy-star {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 0 0 4px rgba(125, 211, 252, 0.12), 0 0 18px rgba(96, 165, 250, 0.22);
+}
+
+.landing-light .feature-galaxy-star-1 { top: 13%; left: 18%; }
+.landing-light .feature-galaxy-star-2 { top: 22%; right: 14%; }
+.landing-light .feature-galaxy-star-3 { bottom: 16%; left: 28%; }
+.landing-light .feature-galaxy-star-4 { bottom: 20%; right: 18%; }
+
+.landing-light .feature-galaxy-star-1 { animation: featureStarTwinkle 3.2s ease-in-out infinite; }
+.landing-light .feature-galaxy-star-2 { animation: featureStarTwinkle 4.1s ease-in-out infinite 0.7s; }
+.landing-light .feature-galaxy-star-3 { animation: featureStarTwinkle 3.7s ease-in-out infinite 1.2s; }
+.landing-light .feature-galaxy-star-4 { animation: featureStarTwinkle 4.4s ease-in-out infinite 0.3s; }
+
+.landing-light .feature-galaxy-hub {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+}
+
+.landing-light .feature-galaxy-core {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 12.5rem;
+  height: 12.5rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(125, 211, 252, 0.26);
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.98), rgba(219, 234, 254, 0.9) 42%, rgba(191, 219, 254, 0.64) 68%, rgba(147, 197, 253, 0.2));
+  box-shadow: 0 0 0 14px rgba(191, 219, 254, 0.16), 0 28px 60px rgba(59, 130, 246, 0.14);
+  text-align: center;
+  padding: 1.25rem;
+  animation: featureCorePulse 5.6s ease-in-out infinite;
+}
+
+.landing-light .feature-galaxy-core-dot {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+  background: radial-gradient(circle, #fff 0%, #fef3c7 45%, #f59e0b 100%);
+  box-shadow: 0 0 0 8px rgba(251, 191, 36, 0.12), 0 0 30px rgba(249, 115, 22, 0.35);
+  margin-bottom: 0.75rem;
+}
+
+.landing-light .feature-galaxy-core-copy {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.landing-light .feature-galaxy-core-copy strong {
+  font-size: 1.02rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.landing-light .feature-galaxy-core-copy span:last-child {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.landing-light .feature-planet {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.42rem;
+  transform: translate(-50%, -50%);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  animation: featurePlanetFloat 7s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.landing-light .feature-planet:focus-visible {
+  outline: none;
+}
+
+.landing-light .feature-planet-sphere {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.8rem;
+  height: 4.8rem;
+  border-radius: 9999px;
+  color: white;
+  transition: transform 0.28s ease, box-shadow 0.28s ease;
+}
+
+.landing-light .feature-planet--sm .feature-planet-sphere {
+  width: 4.1rem;
+  height: 4.1rem;
+}
+
+.landing-light .feature-planet--lg .feature-planet-sphere {
+  width: 5.5rem;
+  height: 5.5rem;
+}
+
+.landing-light .feature-planet-icon {
+  display: inline-flex;
+  transform: scale(0.82);
+}
+
+.landing-light .feature-planet-name {
+  max-width: 6.5rem;
+  text-align: center;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #0f172a;
+}
+
+.landing-light .feature-planet-meta {
+  border-radius: 9999px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.88);
+  padding: 0.2rem 0.52rem;
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.landing-light .feature-planet:hover .feature-planet-sphere,
+.landing-light .feature-planet.is-active .feature-planet-sphere,
+.landing-light .feature-planet:focus-visible .feature-planet-sphere {
+  transform: scale(1.08);
+}
+
+.landing-light .feature-planet.is-active .feature-planet-name,
+.landing-light .feature-planet:focus-visible .feature-planet-name {
+  color: #1d4ed8;
+}
+
+.landing-light .feature-planet.is-active .feature-planet-meta,
+.landing-light .feature-planet:focus-visible .feature-planet-meta {
+  border-color: rgba(96, 165, 250, 0.3);
+  background: rgba(239, 246, 255, 0.95);
+  color: #1d4ed8;
+}
+
+.landing-light .feature-galaxy-detail {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.985), rgba(245, 248, 252, 0.96));
+}
+
+.landing-light .feature-detail-panel-enter {
+  animation: featureDetailIn 0.32s ease;
+}
+
+.landing-light .feature-detail-index {
+  font-size: 0.88rem;
+  font-weight: 900;
+  color: #94a3b8;
+}
+
+.landing-light .feature-detail-next {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(96, 165, 250, 0.26);
+  background: rgba(239, 246, 255, 0.94);
+  padding: 0.48rem 0.8rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1d4ed8;
+  cursor: pointer;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.landing-light .feature-detail-next:hover {
+  transform: translateY(-1px);
+  border-color: rgba(59, 130, 246, 0.38);
+  box-shadow: 0 14px 26px rgba(59, 130, 246, 0.14);
+}
+
+.landing-light .feature-detail-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0.44rem 0.72rem;
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.landing-light .feature-detail-chip-active {
+  border-color: rgba(96, 165, 250, 0.28);
+  background: rgba(239, 246, 255, 0.95);
+  color: #1d4ed8;
+}
+
+.landing-light .feature-detail-grid {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.landing-light .feature-detail-proof {
+  border-radius: 1.15rem;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0.95rem 1rem;
+}
+
+.landing-light .feature-detail-proof-active {
+  border-color: rgba(125, 211, 252, 0.28);
+  background: rgba(248, 252, 255, 0.96);
+}
+
+
+@keyframes featurePlanetFloat {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(-8px);
+  }
+}
+
+@keyframes workflowPreviewGlow {
+  0%,
+  100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.75; }
+  50% { transform: translate3d(-10px, -8px, 0) scale(1.08); opacity: 1; }
+}
+
+@keyframes workflowChipFloat {
+  0%,
+  100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes workflowNodePulse {
+  0%,
+  100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+@keyframes workflowSpotlightDrift {
+  0%,
+  100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.8; }
+  50% { transform: translate3d(10px, 6px, 0) scale(1.08); opacity: 1; }
+}
+
+@keyframes workflowLivePulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.38); opacity: 1; }
+  70% { box-shadow: 0 0 0 12px rgba(255, 255, 255, 0); opacity: 0.9; }
+  100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); opacity: 1; }
+}
+
+@keyframes workflowOrbFloat {
+  0%,
+  100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes workflowMeterSweep {
+  0%,
+  100% { width: 42%; }
+  50% { width: 88%; }
+}
+
+@keyframes workflowMeterShine {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(180%); }
+}
+
+@keyframes workflowStackReveal {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes workflowConnectorFlow {
+  0% { transform: translateX(-50%) translateY(0); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateX(-50%) translateY(40px); opacity: 0; }
+}
+
+@keyframes workflowMiniCardReveal {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes workflowTabPanelIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes featureGalaxyGlow {
+  0%,
+  100% { transform: scale(1) translate3d(0, 0, 0); opacity: 0.8; }
+  50% { transform: scale(1.08) translate3d(-8px, 6px, 0); opacity: 1; }
+}
+
+@keyframes featureOrbitSpin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes featureOrbitSpinReverse {
+  from { transform: translate(-50%, -50%) rotate(360deg); }
+  to { transform: translate(-50%, -50%) rotate(0deg); }
+}
+
+@keyframes featureStarTwinkle {
+  0%,
+  100% { opacity: 0.45; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes featureCorePulse {
+  0%,
+  100% { transform: scale(1); box-shadow: 0 0 0 14px rgba(191, 219, 254, 0.16), 0 28px 60px rgba(59, 130, 246, 0.14); }
+  50% { transform: scale(1.015); box-shadow: 0 0 0 18px rgba(191, 219, 254, 0.12), 0 30px 64px rgba(59, 130, 246, 0.18); }
+}
+
+@keyframes featureDetailIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 1180px) {
+  .landing-light .feature-galaxy-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-light .feature-galaxy-map,
+  .landing-light .feature-galaxy-detail {
+    min-height: 36rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .landing-light .hero-cta-row {
+    align-items: stretch;
+  }
+
+  .landing-light .workflow-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    padding: 0 0.15rem 0.2rem;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+
+  .landing-light .workflow-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .landing-light .workflow-step-flow-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.45rem;
+  }
+
+  .landing-light .workflow-step-card {
+    grid-template-columns: 2.35rem minmax(0, 1fr);
+    padding: 0.72rem 0.78rem;
+  }
+
+  .landing-light .workflow-step-icon {
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 0.85rem;
+    font-size: 0.95rem;
+  }
+
+  .landing-light .workflow-step-label {
+    font-size: 0.8rem;
+  }
+
+  .landing-light .workflow-tab {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    white-space: nowrap;
+    padding: 0.55rem 0.82rem;
+  }
+
+  .landing-light .workflow-usecase-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-light .workflow-preview {
+    border-radius: 1.35rem;
+    padding: 1rem;
+  }
+
+  .landing-light .workflow-node {
+    border-radius: 1.1rem;
+    padding: 0.88rem;
+  }
+
+  .landing-light .workflow-step-arrow {
+    align-self: center;
+    transform: rotate(90deg);
+  }
+
+  .landing-light .feature-proof-dark,
+  .landing-light .workflow-live-result {
+    padding: 0.85rem 0.9rem;
+  }
+
+  .landing-light .workflow-live-orb {
+    width: 3.35rem;
+    height: 3.35rem;
+    font-size: 1.18rem;
+  }
+
+  .landing-light .feature-galaxy-map,
+  .landing-light .feature-galaxy-detail {
+    min-height: auto;
+  }
+
+  .landing-light .feature-galaxy-map {
+    padding: 1rem;
+    aspect-ratio: 1 / 1;
+  }
+
+  .landing-light .feature-orbit-ring-1 {
+    width: 10rem;
+    height: 10rem;
+  }
+
+  .landing-light .feature-orbit-ring-2 {
+    width: 15rem;
+    height: 15rem;
+  }
+
+  .landing-light .feature-orbit-ring-3 {
+    width: 20rem;
+    height: 20rem;
+  }
+
+  .landing-light .feature-galaxy-core {
+    width: 9.5rem;
+    height: 9.5rem;
+    padding: 0.9rem;
+  }
+
+  .landing-light .feature-galaxy-core-copy strong {
+    font-size: 0.88rem;
+  }
+
+  .landing-light .feature-galaxy-core-copy span:last-child {
+    font-size: 0.72rem;
+  }
+
+  .landing-light .feature-planet-sphere {
+    width: 3.55rem;
+    height: 3.55rem;
+  }
+
+  .landing-light .feature-planet--lg .feature-planet-sphere {
+    width: 4.15rem;
+    height: 4.15rem;
+  }
+
+  .landing-light .feature-planet-name {
+    max-width: 5rem;
+    font-size: 0.68rem;
+  }
+
+  .landing-light .feature-planet-meta {
+    display: none;
+  }
+}
+
+@media (max-width: 1024px) {
+  .landing-light .command-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-light .hero-cta-row {
+    gap: 0.75rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .landing-light .hero-download-trigger {
+    width: auto;
+  }
+
+  .landing-light .hero-download-trigger > button {
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-light .aos-element,
+  .landing-light .dot-pulse {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .landing-light .aos-element {
+    opacity: 1;
+    transform: none;
+  }
+
+  .landing-light .feature-planet,
+  .landing-light .feature-detail-panel-enter,
+  .landing-light .workflow-stack-item,
+  .landing-light .workflow-node-dark,
+  .landing-light .workflow-preview::after,
+  .landing-light .workflow-preview-chip,
+  .landing-light .workflow-tab-panel,
+  .landing-light .workflow-live-spotlight::before,
+  .landing-light .workflow-live-pulse,
+  .landing-light .workflow-live-orb,
+  .landing-light .workflow-connector-live::before,
+  .landing-light .workflow-mini-card,
+  .landing-light .feature-orbit-ring,
+  .landing-light .feature-galaxy-star,
+  .landing-light .feature-galaxy-core,
+  .landing-light .feature-galaxy-map::before,
+  .landing-light .feature-planet:hover .feature-planet-sphere,
+  .landing-light .feature-planet.is-active .feature-planet-sphere {
+    transform: none !important;
+    animation: none !important;
+  }
+}
+

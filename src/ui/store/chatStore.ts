@@ -1,0 +1,978 @@
+import { create } from 'zustand';
+import ipc from "@/lib/ipc";
+import type { Channel } from '@/../configs/channelConfig';
+import { CHANNEL } from '@/lib/channelHelper';
+import { assignSendSeq, mergeMessage, sortMessages } from '@/lib/chat/messageMerge';
+
+/** Counter monotonic toàn cục cho send_seq (thứ tự gửi tin nhắn đi). */
+let nextSendSeq = 0;
+
+const MESSAGE_TOPIC_KEY_SEPARATOR = '__tg_topic__';
+const FORUM_TOPICS_STORAGE_PREFIX = 'deplao_forum_topics_';
+
+/** Restore persisted forum topics from localStorage (survives app restart). */
+function loadPersistedForumTopics(): Record<string, any[]> {
+  try {
+    const restored: Record<string, any[]> = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key?.startsWith(FORUM_TOPICS_STORAGE_PREFIX)) continue;
+      const cacheKey = key.slice(FORUM_TOPICS_STORAGE_PREFIX.length);
+      const raw = localStorage.getItem(key);
+      if (raw) restored[cacheKey] = JSON.parse(raw);
+    }
+    return restored;
+  } catch {
+    return {};
+  }
+}
+
+/** Persist a single forum topic list to localStorage. */
+function persistForumTopics(cacheKey: string, topics: any[]): void {
+  try {
+    localStorage.setItem(FORUM_TOPICS_STORAGE_PREFIX + cacheKey, JSON.stringify(topics));
+  } catch {}
+}
+
+/** Clear persisted forum topic cache for a given key. */
+function clearPersistedForumTopics(cacheKey: string): void {
+  try {
+    localStorage.removeItem(FORUM_TOPICS_STORAGE_PREFIX + cacheKey);
+  } catch {}
+}
+
+/**
+ * A Telegram forum topic is a distinct message context even though it shares
+ * its parent chat ID. Keep the old base key for ordinary conversations and
+ * add the topic root only when one is selected.
+ */
+export function getMessageCacheKey(accountId: string, threadId: string, topicRootMessageId?: string | null): string {
+  const base = `${accountId}_${threadId}`;
+  return topicRootMessageId ? `${base}${MESSAGE_TOPIC_KEY_SEPARATOR}${topicRootMessageId}` : base;
+}
+
+function getMessageCacheKeysForThread(messages: Record<string, MessageItem[]>, accountId: string, threadId: string): string[] {
+  const base = `${accountId}_${threadId}`;
+  return Object.keys(messages).filter(key => key === base || key.startsWith(`${base}${MESSAGE_TOPIC_KEY_SEPARATOR}`));
+}
+
+// Thông tin "đã xem" của một thread: ai đã seen + msgId cuối cùng họ seen
+export interface SeenEntry {
+  msgId: string;           // msgId của tin nhắn đã seen gần nhất
+  seenUids: string[];      // danh sách userId đã seen (group: nhiều người, user: 1 người)
+  isGroup: boolean;
+}
+
+export interface ReactionEmoji {
+  total: number;
+  users: Record<string, number>; // userId -> count
+}
+export interface ReactionData {
+  total: number;
+  lastReact: string;
+  emoji: Record<string, ReactionEmoji>; // emojiChar -> stats
+}
+
+export interface MessageItem {
+  id?: number;
+  msg_id: string;
+  cli_msg_id?: string;
+  owner_zalo_id: string;
+  thread_id: string;
+  thread_type: number;
+  sender_id: string;
+  /** Tên người gửi kèm theo tin nhắn (nếu có) — dùng làm fallback khi contact chưa có tên */
+  sender_name?: string;
+  content: string;
+  msg_type: string;
+  timestamp: number;
+  is_sent: number;
+  attachments?: string;
+  local_paths?: string;
+  status: string;
+  is_recalled?: number;  // 1 = tin nhắn đã thu hồi
+  recalled_content?: string | null; // Nội dung gốc trước khi thu hồi
+  is_edited?: number;    // 1 = tin nhắn đã chỉnh sửa
+  edit_history?: string; // JSON array của các phiên bản cũ: [{oldBody, editedAt, editCount}]
+  reactions?: ReactionData | Record<string, string> | string;
+  is_seen?: number;   // 1 = người nhận đã xem (Zalo seen)
+  seen_uids?: string; // JSON array của uid đã xem (nhóm)
+  seen_at?: number;   // epoch ms thời điểm seen
+  quote_data?: string;
+  reply_to_id?: string | null;
+  /** Telegram forum root message ID. Null for a normal chat timeline. */
+  topic_id?: string | null;
+  handled_by_employee?: string | null;  // employee_id of employee who sent/handled this message
+  channel?: Channel;
+
+  // ── Optimistic message fields (MessageQueue) ───────────────────────────
+  /** ID tạm thời do FE sinh (temp_xxx) — dùng để track trước khi có real msgId */
+  temp_id?: string;
+  /** Trạng thái gửi: pending → sending → sent → received | failed | timeout */
+  send_status?: 'pending' | 'sending' | 'sent' | 'received' | 'failed' | 'timeout';
+  /** Số lần retry (0 = lần đầu) */
+  retry_count?: number;
+  /** Message ID thật từ Zalo/Facebook API response (dùng để match với webhook echo) */
+  real_msg_id?: string;
+  /** Error message nếu gửi thất bại */
+  send_error?: string;
+  /** Thời điểm enqueue vào MessageQueue (epoch ms, để tính timeout) */
+  enqueued_at?: number;
+  /** Số thứ tự gửi tăng dần (outgoing temp) — dùng làm tiebreaker khi sort */
+  send_seq?: number;
+  /** Loại media đang upload (để hiển thị progress indicator) */
+  media_type?: 'text' | 'image' | 'file' | 'video' | 'voice' | 'sticker' | 'link';
+  /** Progress upload (0-100), chỉ áp dụng cho media */
+  upload_progress?: number;
+  /** epoch ms thời điểm delivered (máy người nhận nhận được, chưa đọc) */
+  delivered_at?: number;
+}
+
+export interface ContactItem {
+  id?: number;
+  owner_zalo_id: string;
+  contact_id: string;
+  display_name: string;
+  /** Biệt danh do người dùng đặt - ưu tiên hiển thị hơn display_name */
+  alias?: string;
+  avatar_url: string;
+  phone?: string;
+  /** 0 = Nam, 1 = Nữ, null = chưa biết */
+  gender?: number | null;
+  /** DD/MM/YYYY format */
+  birthday?: string | null;
+  is_friend: number;
+  contact_type: string;
+  unread_count: number;
+  last_message?: string;
+  last_message_time?: number;
+  isFr?: number; // 1 = bạn bè, 0 = không phải bạn bè, dùng để hiển thị icon friend ở danh sách
+  /** 1 = tin nhắn cuối là do mình gửi (đã trả lời), dùng để hiển thị icon "đã trả lời" ở danh sách */
+  is_replied?: number;
+  /** 1 = có tin nhắn chưa đọc có @mention (tag tên hoặc @all) */
+  has_mention?: number;
+  channel?: Channel;
+  /** Telegram: 0 = not forum, 1 = forum, null = chưa check */
+  is_forum?: number | null;
+  telegram_folder_id?: number;
+  telegram_archived?: number;
+  /** Null means not hydrated; 0/1 are authoritative Telegram permissions. */
+  telegram_can_send?: number | null;
+  telegram_send_reason?: string;
+  telegram_peer_type?: 'user' | 'basic_group' | 'supergroup' | 'channel' | 'forum' | string;
+  telegram_members_count?: number;
+  telegram_online_count?: number;
+  telegram_state_updated_at?: number;
+  telegram_membership_state?: 'member' | 'joinable' | 'request' | 'pending' | 'left' | 'forbidden' | string;
+  telegram_join_action?: 'join' | 'request' | 'none' | string;
+  // Facebook-specific fields (nullable)
+  fb_emoji?: string;
+  fb_participant_count?: number;
+}
+
+interface ChatStore {
+  contacts: Record<string, ContactItem[]>; // zaloId -> contacts[]
+  messages: Record<string, MessageItem[]>; // `${zaloId}_${threadId}[__tg_topic__${topicRoot}]` -> messages[]
+  activeThreadId: string | null;
+  activeThreadType: number;
+  activeTopicId: string | null;    // Telegram Forum: currently selected topic
+  /** Telegram ForumTopic.id: used only for topic metadata actions (edit/close/pin). */
+  activeForumTopicId: string | null;
+  activeTopicTitle: string | null;  // Telegram Forum: topic display name
+  /** Forum topic list cache: key = `${accountId}_${parentPeerId}` → topics[] */
+  forumTopics: Record<string, any[]>;
+  setForumTopics: (key: string, topics: any[]) => void;
+  replyTo: MessageItem | null;
+  editingMsg: MessageItem | null;
+  /** Employee mode: đang load conversations từ Boss REST API (per-account) */
+  conversationsLoading: Record<string, boolean>;
+  setConversationsLoading: (zaloId: string, v: boolean) => void;
+  /** Employee mode: đang load messages từ Boss REST API */
+  messagesLoading: boolean;
+  setMessagesLoading: (v: boolean) => void;
+  /** Draft messages per thread: key = `${zaloId}_${threadId}` → text */
+  drafts: Record<string, string>;
+  /** Draft updated_at per thread: key = `${zaloId}_${threadId}` → epoch ms */
+  draftTimestamps: Record<string, number>;
+
+  channelFilter: Channel | 'all';
+  setChannelFilter: (filter: Channel | 'all') => void;
+  /** Get contacts for a given account, filtered by current channelFilter */
+  getFilteredContacts: (accountId: string) => ContactItem[];
+
+  setContacts: (zaloId: string, contacts: ContactItem[]) => void;
+  setMessages: (zaloId: string, threadId: string, messages: MessageItem[], topicRootMessageId?: string | null) => void;
+  addMessage: (zaloId: string, threadId: string, message: MessageItem, topicRootMessageId?: string | null) => void;
+  replaceTempMessage: (zaloId: string, threadId: string, tempContent: string, realMsg: Partial<MessageItem>) => void;
+  prependMessages: (zaloId: string, threadId: string, messages: MessageItem[], topicRootMessageId?: string | null) => void;
+  updateContact: (zaloId: string, contact: Partial<ContactItem> & { contact_id: string }) => void;
+  setActiveThread: (threadId: string | null, type?: number) => void;
+  incrementUnread: (zaloId: string, contactId: string) => void;
+  clearUnread: (zaloId: string, contactId: string) => void;
+  /** Đặt is_replied=1 + unread_count=0 cho conversation (khi mình là người gửi tin nhắn cuối) */
+  markReplied: (zaloId: string, contactId: string) => void;
+  /** Sync is_replied dựa trên tin nhắn cuối thực tế (gọi sau khi load messages) */
+  syncRepliedState: (zaloId: string, contactId: string, ownZaloId: string) => void;
+  setReplyTo: (msg: MessageItem | null) => void;
+  setEditingMsg: (msg: MessageItem | null) => void;
+  /** Lưu draft cho thread (gọi khi chuyển thread hoặc khi text thay đổi) - debounced persist to DB */
+  setDraft: (zaloId: string, threadId: string, text: string) => void;
+  /** Xoá draft cho thread (gọi khi gửi tin nhắn thành công) */
+  clearDraft: (zaloId: string, threadId: string) => void;
+  /** Load tất cả drafts cho account từ DB - gọi khi khởi tạo hoặc switch account */
+  loadDrafts: (zaloId: string) => Promise<void>;
+  removeMessage: (zaloId: string, threadId: string, msgId: string) => void;
+  recallMessage: (zaloId: string, msgId: string, threadId?: string) => void;
+  updateMessageReaction: (zaloId: string, threadId: string, msgId: string, userId: string, icon: string) => void;
+  replaceMessageReactions: (zaloId: string, threadId: string, msgId: string, reactions: ReactionData) => void;
+  updateMessageEdit: (zaloId: string, threadId: string, msgId: string, newText: string, editCount: number, timestampMs: number) => void;
+  updateLocalPaths: (zaloId: string, threadId: string, msgId: string, localPaths: Record<string, string>) => void;
+  updateMessageLocalPath: (zaloId: string, threadId: string, msgId: string, localPaths: Record<string, string>) => void;
+  removeContact: (zaloId: string, contactId: string) => void;
+  // ── Optimistic message actions ──
+  /** Cập nhật send_status + các field liên quan cho 1 temp message */
+  updateMessageStatus: (zaloId: string, threadId: string, tempId: string, status: MessageItem['send_status'], extra?: Partial<MessageItem>) => void;
+  /** Tìm temp message có real_msg_id match — dùng cho dedup khi webhook echo đến */
+  findPendingByRealMsgId: (zaloId: string, threadId: string, realMsgId: string) => MessageItem | undefined;
+  // Typing & seen
+  typingUsers: Record<string, number>;      // key=`${zaloId}_${threadId}_${userId}`, value=timestamp
+  seenInfo: Record<string, SeenEntry>;       // key=`${zaloId}_${threadId}`
+  setTyping: (zaloId: string, threadId: string, userId: string) => void;
+  clearTypingForThread: (zaloId: string, threadId: string) => void;
+  setSeen: (zaloId: string, threadId: string, seenUids: string[], msgId: string, isGroup: boolean) => void;
+  /** Đánh dấu đã xem cho tin msgId + các tin của mình trước đó trong thread (Zalo seen) */
+  markMessageSeen: (zaloId: string, threadId: string, msgId: string, seenUids: string[], isGroup: boolean) => void;
+  /** Đánh dấu đã nhận (delivered) cho tin msgId + các tin của mình trước đó (Zalo delivered) */
+  markMessageDelivered: (zaloId: string, threadId: string, msgId: string, deliveredUids: string[], isGroup: boolean) => void;
+  // Presence (Telegram user status)
+  userPresence: Record<string, { status: string; lastSeen?: number; updatedAt: number }>; // key=`${zaloId}_${userId}`
+  setPresence: (zaloId: string, userId: string, status: string, wasOnline?: number) => void;
+  getPresence: (zaloId: string, userId: string) => { status: string; lastSeen?: number } | null;
+  // Per-account last active thread (restored when switching back)
+  perAccountThread: Record<string, { threadId: string; threadType: number } | null>;
+  saveAccountThread: (accountId: string, threadId: string, threadType: number) => void;
+  /** Reset all chat state when switching workspace - clears messages cache, active thread, etc. */
+  resetForWorkspaceSwitch: () => void;
+}
+
+export const useChatStore = create<ChatStore>((set, get) => ({
+  contacts: {},
+  messages: {},
+  activeThreadId: null,
+  activeThreadType: 0,
+  activeTopicId: null,
+  activeForumTopicId: null,
+  activeTopicTitle: null,
+  forumTopics: loadPersistedForumTopics(),
+  replyTo: null,
+  editingMsg: null,
+  typingUsers: {},
+  seenInfo: {},
+  userPresence: {},
+  perAccountThread: {},
+  drafts: {},
+  draftTimestamps: {},
+  channelFilter: 'all',
+  conversationsLoading: {},
+  messagesLoading: false,
+
+  setConversationsLoading: (zaloId, v) => set((s) => ({ conversationsLoading: { ...s.conversationsLoading, [zaloId]: v } })),
+  setMessagesLoading: (v) => set({ messagesLoading: v }),
+  setChannelFilter: (filter) => set({ channelFilter: filter }),
+  setForumTopics: (key, topics) => {
+    persistForumTopics(key, topics);
+    set((state) => ({ forumTopics: { ...state.forumTopics, [key]: topics } }));
+  },
+
+  getFilteredContacts: (accountId) => {
+    const { contacts, channelFilter } = get();
+    const list = contacts[accountId] || [];
+    if (channelFilter === 'all') return list;
+    return list.filter((c) => (c.channel || CHANNEL.ZALO) === channelFilter);
+  },
+
+  saveAccountThread: (accountId, threadId, threadType) =>
+    set((state) => ({
+      perAccountThread: { ...state.perAccountThread, [accountId]: { threadId, threadType } },
+    })),
+
+  resetForWorkspaceSwitch: () => set({
+    contacts: {},
+    messages: {},
+    activeThreadId: null,
+    activeThreadType: 0,
+    activeTopicId: null,
+    activeForumTopicId: null,
+    activeTopicTitle: null,
+    forumTopics: {},
+    replyTo: null,
+    editingMsg: null,
+    perAccountThread: {},
+    drafts: {},
+    draftTimestamps: {},
+    typingUsers: {},
+    seenInfo: {},
+  }),
+
+  setContacts: (zaloId, contacts) =>
+    set((state) => ({
+      contacts: {
+        ...state.contacts,
+        [zaloId]: contacts.map(c => {
+          // Normalize legacy avatar URL format: media://local/ → local-media://
+          if (c.avatar_url && c.avatar_url.startsWith('media://local/')) {
+            const rawPath = c.avatar_url.replace('media://local/', '');
+            const normalized = rawPath.replace(/\\/g, '/');
+            const withSlash = normalized.startsWith('/') ? normalized : '/' + normalized;
+            return { ...c, avatar_url: 'local-media://' + withSlash };
+          }
+          return c;
+        }),
+      },
+    })),
+
+  setMessages: (zaloId, threadId, messages, topicRootMessageId) => {
+    const key = getMessageCacheKey(zaloId, threadId, topicRootMessageId);
+    set((state) => {
+      // Preserve recalled state: nếu tin nhắn đang bị recalled trong store hiện tại
+      // mà DB chưa kịp lưu, giữ nguyên trạng thái recalled để tránh hiện lại nội dung gốc
+      const existing = state.messages[key] || [];
+      const recalledMap = new Map<string, MessageItem>();
+      for (const m of existing) {
+        if (m.is_recalled === 1) recalledMap.set(String(m.msg_id), m);
+      }
+      const merged = recalledMap.size > 0
+        ? messages.map((m) => {
+            const rec = recalledMap.get(String(m.msg_id));
+            if (rec) return { ...m, is_recalled: 1, status: 'recalled', msg_type: 'recalled', content: '', recalled_content: rec.recalled_content ?? m.content };
+            return m;
+          })
+        : messages;
+
+      // Evict old cached threads to cap memory - keep active thread + 20 most recent
+      const MAX_CACHED_THREADS = 20;
+      let newMessages = { ...state.messages, [key]: merged };
+      const threadKeys = Object.keys(newMessages);
+      if (threadKeys.length > MAX_CACHED_THREADS) {
+        const activeKey = state.activeThreadId
+          ? getMessageCacheKey(zaloId, state.activeThreadId, state.activeTopicId)
+          : null;
+        // Keep current key + active key, evict oldest (by insertion order)
+        const toEvict = threadKeys.filter(k => k !== key && k !== activeKey);
+        const evictCount = threadKeys.length - MAX_CACHED_THREADS;
+        for (let i = 0; i < evictCount && i < toEvict.length; i++) {
+          delete newMessages[toEvict[i]];
+        }
+      }
+      return { messages: newMessages };
+    });
+  },
+
+  addMessage: (zaloId, threadId, message, topicRootMessageId) => {
+    const key = getMessageCacheKey(zaloId, threadId, topicRootMessageId ?? message.topic_id);
+    // Gán send_seq cho outgoing temp message (giữ thứ tự gửi khi echo real đến)
+    const assigned = assignSendSeq(message, nextSendSeq);
+    nextSendSeq = assigned.next;
+    set((state) => {
+      const existing = state.messages[key] || [];
+      const updated = mergeMessage(existing, assigned.msg);
+      // Pure duplicate (cùng msg_id, không gì merge) → giữ nguyên state, tránh re-render thừa
+      if (updated === existing) return state;
+      return { messages: { ...state.messages, [key]: updated } };
+    });
+  },
+
+  prependMessages: (zaloId, threadId, messages, topicRootMessageId) => {
+    const key = getMessageCacheKey(zaloId, threadId, topicRootMessageId);
+    set((state) => {
+      const existing = state.messages[key] || [];
+      const existingIds = new Set(existing.map(m => m.msg_id));
+      const newMessages = messages.filter(m => !existingIds.has(m.msg_id));
+      if (newMessages.length === 0) return state;
+      // Sort by (timestamp, send_seq) ASC to maintain chronological + send order
+      const merged = [...newMessages, ...existing];
+      merged.sort(sortMessages);
+      return { messages: { ...state.messages, [key]: merged } };
+    });
+  },
+
+  replaceTempMessage: (zaloId, threadId, tempContent, realMsg) => {
+    set((state) => {
+      const updatedMessages = { ...state.messages };
+      let changed = false;
+      for (const key of getMessageCacheKeysForThread(updatedMessages, zaloId, threadId)) {
+        const existing = updatedMessages[key] || [];
+        const updated = existing.map((m) => {
+          if (!m.msg_id.startsWith('temp_') || m.content !== tempContent) return m;
+          changed = true;
+          return { ...m, ...realMsg };
+        });
+        updatedMessages[key] = updated;
+      }
+      return changed ? { messages: updatedMessages } : state;
+    });
+  },
+
+  updateContact: (zaloId, contact) =>
+    set((state) => {
+      const list = state.contacts[zaloId] || [];
+      const exists = list.some((c) => c.contact_id === contact.contact_id);
+      const updated = exists
+        ? list.map((c) => (c.contact_id === contact.contact_id ? { ...c, ...contact } : c))
+        : [
+            ...list,
+            {
+              // Safe defaults so display_name is never undefined
+              owner_zalo_id: zaloId,
+              display_name: contact.contact_id || '',
+              avatar_url: '',
+              is_friend: 0,
+              contact_type: 'user',
+              unread_count: 0,
+              last_message: '',
+              last_message_time: 0,
+              ...contact,
+            } as ContactItem,
+          ];
+      // Sort by last_message_time desc
+      updated.sort((a, b) => (b.last_message_time || 0) - (a.last_message_time || 0));
+      return { contacts: { ...state.contacts, [zaloId]: updated } };
+    }),
+
+  setActiveThread: (threadId, type = 0) =>
+    set((state) => ({
+      activeThreadId: threadId,
+      activeThreadType: type,
+      // A forum topic belongs to exactly one chat. Any ordinary navigation
+      // must clear it or subsequent messages/history get filtered as topic UI.
+      ...(threadId !== state.activeThreadId
+        ? { activeTopicId: null, activeForumTopicId: null, activeTopicTitle: null }
+        : {}),
+    })),
+
+  incrementUnread: (zaloId, contactId) =>
+    set((state) => {
+      const list = state.contacts[zaloId] || [];
+      return {
+        contacts: {
+          ...state.contacts,
+          [zaloId]: list.map((c) =>
+            c.contact_id === contactId
+              ? { ...c, unread_count: (c.unread_count || 0) + 1, is_replied: 0 }
+              : c
+          ),
+        },
+      };
+    }),
+
+  clearUnread: (zaloId, contactId) =>
+    set((state) => {
+      const list = state.contacts[zaloId] || [];
+      return {
+        contacts: {
+          ...state.contacts,
+          [zaloId]: list.map((c) =>
+            c.contact_id === contactId ? { ...c, unread_count: 0 } : c
+          ),
+        },
+      };
+    }),
+
+  markReplied: (zaloId, contactId) =>
+    set((state) => {
+      const list = state.contacts[zaloId] || [];
+      return {
+        contacts: {
+          ...state.contacts,
+          [zaloId]: list.map((c) =>
+            c.contact_id === contactId ? { ...c, unread_count: 0, is_replied: 1 } : c
+          ),
+        },
+      };
+    }),
+
+  syncRepliedState: (zaloId, contactId, ownZaloId) =>
+    set((state) => {
+      const key = `${zaloId}_${contactId}`;
+      const msgs = state.messages[key] || [];
+      if (msgs.length === 0) return state;
+      // Tìm tin nhắn cuối không phải system/temp
+      const lastReal = [...msgs].reverse().find(m =>
+        !m.msg_id.startsWith('temp_') && m.msg_type !== 'system'
+      );
+      if (!lastReal) return state;
+      const isReplied = lastReal.sender_id === ownZaloId || lastReal.is_sent === 1 ? 1 : 0;
+      const list = state.contacts[zaloId] || [];
+      return {
+        contacts: {
+          ...state.contacts,
+          [zaloId]: list.map((c) =>
+            c.contact_id === contactId ? { ...c, is_replied: isReplied } : c
+          ),
+        },
+      };
+    }),
+
+  setReplyTo: (msg) => set({ replyTo: msg }),
+  setEditingMsg: (msg) => set({ editingMsg: msg }),
+
+  setDraft: (zaloId, threadId, text) => {
+    const key = `${zaloId}_${threadId}`;
+    set((state) => {
+      if (!text.trim()) {
+        // Xoá draft nếu text rỗng
+        const { [key]: _, ...restDrafts } = state.drafts;
+        const { [key]: __, ...restTs } = state.draftTimestamps;
+        // Persist delete to DB
+        ipc?.db?.deleteDraft({ zaloId, threadId }).catch(() => {});
+        return { drafts: restDrafts, draftTimestamps: restTs };
+      }
+      // Persist upsert to DB
+      ipc?.db?.upsertDraft({ zaloId, threadId, content: text }).catch(() => {});
+      return {
+        drafts: { ...state.drafts, [key]: text },
+        draftTimestamps: { ...state.draftTimestamps, [key]: Date.now() },
+      };
+    });
+  },
+
+  clearDraft: (zaloId, threadId) => {
+    const key = `${zaloId}_${threadId}`;
+    set((state) => {
+      const { [key]: _, ...restDrafts } = state.drafts;
+      const { [key]: __, ...restTs } = state.draftTimestamps;
+      return { drafts: restDrafts, draftTimestamps: restTs };
+    });
+    // Persist delete to DB (outside set() callback to avoid IPC inside state updater)
+    ipc?.db?.deleteDraft({ zaloId, threadId }).catch(() => {});
+  },
+
+  loadDrafts: async (zaloId) => {
+    try {
+      const res = await ipc?.db?.getDrafts({ zaloId });
+      if (!res?.success || !res.drafts?.length) return;
+      const newDrafts: Record<string, string> = {};
+      const newTimestamps: Record<string, number> = {};
+      for (const d of res.drafts) {
+        const key = `${zaloId}_${d.threadId}`;
+        newDrafts[key] = d.content;
+        newTimestamps[key] = d.updatedAt;
+      }
+      set((state) => ({
+        drafts: { ...state.drafts, ...newDrafts },
+        draftTimestamps: { ...state.draftTimestamps, ...newTimestamps },
+      }));
+    } catch { /* ignore */ }
+  },
+
+  removeMessage: (zaloId, threadId, msgId) => {
+    set((state) => {
+      const updatedMessages = { ...state.messages };
+      let changed = false;
+      for (const key of getMessageCacheKeysForThread(updatedMessages, zaloId, threadId)) {
+        const current = updatedMessages[key] || [];
+        const next = current.filter((m) => String(m.msg_id) !== String(msgId));
+        if (next.length !== current.length) {
+          updatedMessages[key] = next;
+          changed = true;
+        }
+      }
+      return changed ? { messages: updatedMessages } : state;
+    });
+  },
+
+  recallMessage: (zaloId, msgId, threadId?) => {
+    // Tìm trong tất cả threads nếu không biết threadId
+    set((state) => {
+      const updatedMessages = { ...state.messages };
+      const keysToCheck = threadId
+        ? [`${zaloId}_${threadId}`]
+        : Object.keys(updatedMessages).filter(k => k.startsWith(zaloId + '_'));
+      const msgIdStr = String(msgId);
+      for (const key of keysToCheck) {
+        const list = updatedMessages[key];
+        if (!list) continue;
+        // Match bằng msg_id HOẶC cli_msg_id
+        const idx = list.findIndex(m =>
+          String(m.msg_id) === msgIdStr || String(m.cli_msg_id || '') === msgIdStr
+        );
+        if (idx !== -1) {
+          const updated = [...list];
+          // Nếu đã recalled rồi (lần 2 từ webhook) → chỉ giữ nguyên, không overwrite recalled_content
+          // Trường hợp handleUndo gọi trước → recalled_content đã có nội dung gốc
+          // Webhook đến sau, content='', nếu overwrite thì mất recalled_content
+          const alreadyRecalled = updated[idx].is_recalled === 1;
+          const originalContent = alreadyRecalled
+            ? (updated[idx].recalled_content ?? updated[idx].content ?? null) // preserve existing
+            : (updated[idx].content || null);                                   // capture original
+          updated[idx] = {
+            ...updated[idx],
+            msg_type: 'recalled',
+            content: '',
+            recalled_content: originalContent,
+            status: 'recalled',
+            is_recalled: 1,
+          };
+          updatedMessages[key] = updated;
+          break;
+        }
+      }
+      return { messages: updatedMessages };
+    });
+  },
+
+  updateMessageReaction: (zaloId, threadId, msgId, userId, icon) => {
+    const msgIdStr = String(msgId);
+    set((state) => {
+      const updatedMessages = { ...state.messages };
+      let changed = false;
+      for (const key of getMessageCacheKeysForThread(updatedMessages, zaloId, threadId)) {
+        const list = updatedMessages[key] || [];
+        if (!list.some(m => String(m.msg_id) === msgIdStr)) continue;
+        updatedMessages[key] = list.map((m) => {
+          if (String(m.msg_id) !== msgIdStr) return m;
+
+          // Parse reactions from string (comes as string from DB)
+          let current: ReactionData;
+          const raw = m.reactions;
+          let parsed: any = {};
+          if (typeof raw === 'string') {
+            try { parsed = JSON.parse(raw || '{}'); } catch { parsed = {}; }
+          } else if (raw && typeof raw === 'object') {
+            parsed = raw;
+          }
+
+          // Detect format: new = has .emoji object, old = { userId: emojiChar }
+          if (parsed && typeof parsed === 'object' && parsed.emoji && typeof parsed.emoji === 'object') {
+            current = parsed as ReactionData;
+          } else {
+            // Migrate old format { userId: emojiChar } to new format
+            current = { total: 0, lastReact: '', emoji: {} };
+            for (const [uid, emo] of Object.entries(parsed as Record<string, string>)) {
+              if (!emo) continue;
+              if (!current.emoji[emo]) current.emoji[emo] = { total: 0, users: {} };
+              current.emoji[emo].total++;
+              current.emoji[emo].users[uid] = (current.emoji[emo].users[uid] || 0) + 1;
+              current.total++;
+              current.lastReact = emo;
+            }
+          }
+
+          // Apply PHP-like reaction logic
+          if (!icon) {
+            // Remove user's reactions across all emojis
+            for (const emo of Object.keys(current.emoji)) {
+              const userCount = current.emoji[emo].users[userId] || 0;
+              if (userCount > 0) {
+                current.emoji[emo].total -= userCount;
+                current.total -= userCount;
+                delete current.emoji[emo].users[userId];
+                if (current.emoji[emo].total <= 0) delete current.emoji[emo];
+              }
+            }
+          } else {
+            if (!current.emoji[icon]) {
+              current.emoji[icon] = { total: 1, users: { [userId]: 1 } };
+            } else {
+              current.emoji[icon].total++;
+              current.emoji[icon].users[userId] = (current.emoji[icon].users[userId] || 0) + 1;
+            }
+            current.total++;
+            current.lastReact = icon;
+          }
+
+          return { ...m, reactions: { ...current } };
+        });
+        changed = true;
+        break;
+      }
+      return changed ? { messages: updatedMessages } : state;
+    });
+  },
+
+  replaceMessageReactions: (zaloId, threadId, msgId, reactions) => {
+    const msgIdStr = String(msgId);
+    set((state) => {
+      const updatedMessages = { ...state.messages };
+      let changed = false;
+      for (const key of getMessageCacheKeysForThread(updatedMessages, zaloId, threadId)) {
+        const messages = updatedMessages[key] || [];
+        if (!messages.some(message => String(message.msg_id) === msgIdStr)) continue;
+        updatedMessages[key] = messages.map(message =>
+          String(message.msg_id) === msgIdStr ? { ...message, reactions } : message
+        );
+        changed = true;
+      }
+      return changed ? { messages: updatedMessages } : state;
+    });
+  },
+
+  updateMessageEdit: (zaloId, threadId, msgId, newText, editCount, timestampMs) => {
+    set((state) => {
+      const updatedMessages = { ...state.messages };
+      const msgIdStr = String(msgId);
+      // threadId=0 ("0") is invalid - search all threads by msgId
+      const keysToCheck = threadId && threadId !== '0'
+        ? getMessageCacheKeysForThread(updatedMessages, zaloId, threadId)
+        : Object.keys(updatedMessages).filter(k => k.startsWith(zaloId + '_'));
+
+      let foundThreadKey = '';
+      for (const key of keysToCheck) {
+        const list = updatedMessages[key];
+        if (!list) continue;
+        const idx = list.findIndex(m =>
+          String(m.msg_id) === msgIdStr || String(m.cli_msg_id || '') === msgIdStr
+        );
+        if (idx !== -1) {
+          const updated = [...list];
+          const current = updated[idx];
+
+          // Skip if content hasn't actually changed (prevents false "edited" marks)
+          if (current.content === newText) return state;
+
+          // Preserve old content in edit_history
+          let historyArr: Array<{ oldBody: string; editedAt: number; editCount: number }> = [];
+          if (current.edit_history) {
+            try { historyArr = JSON.parse(current.edit_history); } catch { historyArr = []; }
+          }
+          // Only push if content actually changed
+          if (current.content) {
+            historyArr.push({
+              oldBody: current.content,
+              editedAt: timestampMs,
+              editCount: editCount,
+            });
+          }
+
+          updated[idx] = {
+            ...updated[idx],
+            content: newText,
+            is_edited: 1,
+            edit_history: JSON.stringify(historyArr),
+          };
+          updatedMessages[key] = updated;
+          foundThreadKey = key;
+          break;
+        }
+      }
+
+      const result: any = { messages: updatedMessages };
+
+      // If message was found and this is the last message, update contact preview
+      if (foundThreadKey) {
+        const actualThreadId = threadId;
+        const contacts = state.contacts[zaloId] || [];
+        const contactIdx = contacts.findIndex(c => c.contact_id === actualThreadId);
+        if (contactIdx >= 0) {
+          const updatedContacts = [...contacts];
+          const lastMsg = (updatedMessages[foundThreadKey] || [])
+            .filter((m: MessageItem) => m.is_recalled !== 1 && m.msg_type !== 'system')
+            .sort((a: MessageItem, b: MessageItem) => b.timestamp - a.timestamp);
+          if (lastMsg.length > 0 && String(lastMsg[0].msg_id) === msgIdStr) {
+            updatedContacts[contactIdx] = {
+              ...updatedContacts[contactIdx],
+              last_message: newText?.slice(0, 100) || '[Đã chỉnh sửa]',
+              last_message_time: timestampMs || Date.now(),
+            };
+            result.contacts = { ...state.contacts, [zaloId]: updatedContacts };
+          }
+        }
+      }
+
+      return result;
+    });
+  },
+
+  updateMessageLocalPath: (zaloId, threadId, msgId, localPaths) => {
+    const msgIdStr = String(msgId);
+    set((state) => {
+      const updatedMessages = { ...state.messages };
+      let changed = false;
+      for (const key of getMessageCacheKeysForThread(updatedMessages, zaloId, threadId)) {
+        const msgs = updatedMessages[key] || [];
+        if (!msgs.some(m => String(m.msg_id) === msgIdStr)) continue;
+        updatedMessages[key] = msgs.map((m) => {
+          if (String(m.msg_id) !== msgIdStr) return m;
+          let existing: Record<string, string> = {};
+          if (typeof m.local_paths === 'string') {
+            try { existing = JSON.parse(m.local_paths || '{}'); } catch {}
+          }
+          return { ...m, local_paths: JSON.stringify({ ...existing, ...localPaths }) };
+        });
+        changed = true;
+      }
+      return changed ? { messages: updatedMessages } : state;
+    });
+  },
+
+  updateLocalPaths: (zaloId, threadId, msgId, localPaths) => {
+    useChatStore.getState().updateMessageLocalPath(zaloId, threadId, msgId, localPaths);
+  },
+
+  setTyping: (zaloId, threadId, userId) => {
+    const key = `${zaloId}_${threadId}_${userId}`;
+    set((state) => ({ typingUsers: { ...state.typingUsers, [key]: Date.now() } }));
+    // Auto-clear after 8s max (tin nhắn đến sẽ clear sớm hơn qua clearTypingForThread)
+    setTimeout(() => {
+      set((state) => {
+        const updated = { ...state.typingUsers };
+        if (updated[key] && Date.now() - updated[key] >= 9500) delete updated[key];
+        return { typingUsers: updated };
+      });
+    }, 8000);
+  },
+
+  clearTypingForThread: (zaloId, threadId) => {
+    const prefix = `${zaloId}_${threadId}_`;
+    set((state) => {
+      const updated = { ...state.typingUsers };
+      let changed = false;
+      for (const key of Object.keys(updated)) {
+        if (key.startsWith(prefix)) { delete updated[key]; changed = true; }
+      }
+      return changed ? { typingUsers: updated } : state;
+    });
+  },
+
+  setSeen: (zaloId, threadId, seenUids, msgId, isGroup) => {
+    const key = `${zaloId}_${threadId}`;
+    set((state) => {
+      const prev = state.seenInfo[key];
+      // Merge UIDs - deduplicate, keep union
+      const prevUids = prev?.seenUids || [];
+      const merged = Array.from(new Set([...prevUids, ...seenUids]));
+      return {
+        seenInfo: {
+          ...state.seenInfo,
+          [key]: { msgId: msgId || prev?.msgId || 'seen', seenUids: merged, isGroup },
+        },
+      };
+    });
+  },
+
+  markMessageSeen: (zaloId, threadId, msgId, seenUids, isGroup) => {
+    set((state) => {
+      const updatedMessages = { ...state.messages };
+      let changed = false;
+      for (const key of getMessageCacheKeysForThread(updatedMessages, zaloId, threadId)) {
+        const msgs = updatedMessages[key];
+        if (!msgs) continue;
+        const seenMsg = msgId
+          ? msgs.find(m => m.msg_id === msgId || m.real_msg_id === msgId || m.cli_msg_id === msgId)
+          : undefined;
+        const cutTs = seenMsg?.timestamp ?? Number.MAX_SAFE_INTEGER;
+        let anyChanged = false;
+        const updated = msgs.map((m) => {
+          if (m.is_sent !== 1 || m.sender_id !== zaloId) return m;
+          if (m.timestamp > cutTs) return m;
+          let prev: string[] = [];
+          try { prev = m.seen_uids ? JSON.parse(m.seen_uids) : []; } catch {}
+          const merged = isGroup ? Array.from(new Set([...prev, ...seenUids])) : prev;
+          if (m.is_seen === 1 && merged.length === prev.length) return m;
+          anyChanged = true;
+          return { ...m, is_seen: 1, seen_at: Date.now(), delivered_at: m.delivered_at ?? Date.now(), seen_uids: JSON.stringify(merged) };
+        });
+        if (anyChanged) { updatedMessages[key] = updated; changed = true; }
+      }
+      return changed ? { messages: updatedMessages } : state;
+    });
+  },
+
+  /** Đánh dấu tin của mình ≤ anchor là đã nhận (delivered), chưa seen */
+  markMessageDelivered: (zaloId, threadId, msgId, _deliveredUids, _isGroup) => {
+    set((state) => {
+      const updatedMessages = { ...state.messages };
+      let changed = false;
+      for (const key of getMessageCacheKeysForThread(updatedMessages, zaloId, threadId)) {
+        const msgs = updatedMessages[key];
+        if (!msgs) continue;
+        const deliveredMsg = msgId
+          ? msgs.find(m => m.msg_id === msgId || m.real_msg_id === msgId || m.cli_msg_id === msgId)
+          : undefined;
+        const cutTs = deliveredMsg?.timestamp ?? Number.MAX_SAFE_INTEGER;
+        let anyChanged = false;
+        const updated = msgs.map((m) => {
+          if (m.is_sent !== 1 || m.sender_id !== zaloId) return m;
+          if (m.timestamp > cutTs) return m;
+          if (m.delivered_at || m.is_seen === 1) return m;
+          anyChanged = true;
+          return { ...m, delivered_at: Date.now() };
+        });
+        if (anyChanged) { updatedMessages[key] = updated; changed = true; }
+      }
+      return changed ? { messages: updatedMessages } : state;
+    });
+  },
+
+  setPresence: (zaloId, userId, status, wasOnline) => {
+    const key = `${zaloId}_${userId}`;
+    set((state) => ({
+      userPresence: {
+        ...state.userPresence,
+        [key]: {
+          status,
+          lastSeen: wasOnline || (status === 'online' ? Math.floor(Date.now() / 1000) : state.userPresence[key]?.lastSeen),
+          updatedAt: Date.now(),
+        },
+      },
+    }));
+  },
+
+  getPresence: (zaloId, userId) => {
+    const key = `${zaloId}_${userId}`;
+    const entry = get().userPresence[key];
+    if (!entry) return null;
+    // Online status expires after 5 minutes if not refreshed
+    if (entry.status === 'online' && Date.now() - entry.updatedAt > 5 * 60 * 1000) {
+      return { status: 'offline', lastSeen: entry.lastSeen };
+    }
+    return { status: entry.status, lastSeen: entry.lastSeen };
+  },
+
+  removeContact: (zaloId, contactId) => {
+    set((state) => {
+      const existing = state.contacts[zaloId] || [];
+      const updated = existing.filter(c => c.contact_id !== contactId);
+      // Also clear messages for that thread
+      const newMessages = { ...state.messages };
+      for (const key of getMessageCacheKeysForThread(newMessages, zaloId, contactId)) {
+        delete newMessages[key];
+      }
+      return { contacts: { ...state.contacts, [zaloId]: updated }, messages: newMessages };
+    });
+  },
+
+  // ── Optimistic message actions ───────────────────────────────────────────
+
+  updateMessageStatus: (zaloId, threadId, tempId, status, extra) => {
+    set((state) => {
+      const updatedMessages = { ...state.messages };
+      let changed = false;
+      for (const key of getMessageCacheKeysForThread(updatedMessages, zaloId, threadId)) {
+        const msgs = updatedMessages[key];
+        if (!msgs) continue;
+        const idx = msgs.findIndex(m => m.msg_id === tempId);
+        if (idx < 0) continue;
+        const updated = [...msgs];
+        updated[idx] = { ...updated[idx], send_status: status, ...extra };
+        updatedMessages[key] = updated;
+        changed = true;
+        break;
+      }
+      return changed ? { messages: updatedMessages } : state;
+    });
+  },
+
+  findPendingByRealMsgId: (zaloId, threadId, realMsgId) => {
+    const allMessages = get().messages;
+    for (const key of getMessageCacheKeysForThread(allMessages, zaloId, threadId)) {
+      const pending = (allMessages[key] || []).find(m =>
+        m.msg_id.startsWith('temp_') &&
+        m.is_sent === 1 &&
+        m.real_msg_id === realMsgId
+      );
+      if (pending) return pending;
+    }
+    return undefined;
+  },
+}));
