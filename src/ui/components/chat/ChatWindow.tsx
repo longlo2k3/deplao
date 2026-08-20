@@ -445,6 +445,18 @@ export default function ChatWindow() {
   }, [groupMembers]);
   const getGroupMember = (senderId: string) => groupMemberMap.get(String(senderId));
 
+  // Resolve real name/avatar for a seen-by uid — never fall back to raw uid/UUID
+  const resolveSeenName = (uid: string): { name: string; avatar: string } => {
+    const ct = getContact(uid);
+    const gm = getGroupMember(uid);
+    const displayName = ct?.display_name || gm?.displayName;
+    const name = ct?.alias
+      || (displayName && displayName !== uid && !/^-?\d+$/.test(String(displayName)) ? displayName : '')
+      || '';
+    const avatar = toLocalMediaUrl(gm?.avatar || ct?.avatar_url || '');
+    return { name, avatar };
+  };
+
   // Check if current user is group owner or deputy - can recall any member's message
   const isGroupAdmin = React.useMemo(() => {
     if (!activeAccountId || !activeThreadId) return false;
@@ -3495,7 +3507,10 @@ export default function ChatWindow() {
                           // Người xem trong 1-1 chính là contact của thread → avatar chuẩn nhất
                           const threadContact = getContact(activeThreadId || '');
                           const viewerContact = threadContact?.avatar_url ? threadContact : getContact(viewerUid);
-                          const viewerName = viewerContact?.display_name || viewerContact?.name || viewerUid;
+                          const viewerDisplayName = viewerContact?.alias || viewerContact?.display_name || viewerContact?.name;
+                          const viewerName = (viewerDisplayName && viewerDisplayName !== viewerUid && !/^-?\d+$/.test(String(viewerDisplayName)))
+                            ? viewerDisplayName
+                            : getFriendlyUserName((msg.channel || CHANNEL.ZALO) as any);
                           const viewerAvatar = toLocalMediaUrl(viewerContact?.avatar_url || '');
                           if (isGroup) return null; // nhóm: avatar stack hiển thị ở dòng dưới
                           // 1-1: avatar người đối diện đã xem
@@ -3533,10 +3548,11 @@ export default function ChatWindow() {
                         const isGroup = Number(msg.thread_type) === 1 || (isFb && seenUids.length > 1);
                         const isSeen = msg.is_seen === 1 || (isGroup && seenUids.length > 0);
                         if (!isGroup || !isSeen || seenUids.length === 0) return null;
+                        const friendlyName = getFriendlyUserName((msg.channel || CHANNEL.ZALO) as any);
                         const nameByUid: Record<string, string> = {};
                         for (const uid of seenUids) {
-                          const c = contactList[uid];
-                          nameByUid[uid] = c?.display_name || c?.name || uid;
+                          const resolved = resolveSeenName(uid);
+                          nameByUid[uid] = resolved.name || friendlyName;
                         }
                         const names = seenUids.map(uid => nameByUid[uid]).filter(Boolean);
                         const label = names.length === 0 ? 'Đã xem'
@@ -3544,13 +3560,11 @@ export default function ChatWindow() {
                           : `${names.slice(0, 3).join(', ')}${names.length > 3 ? ` +${names.length - 3}` : ''}: Đã xem`;
                         // Avatar stack người đã xem (như Zalo) — ưu tiên avatar thành viên nhóm, fallback contact
                         const avatars = seenUids.slice(0, 4).map((uid) => {
-                          const gm = getGroupMember(uid);
-                          const ct = getContact(uid);
-                          const name = gm?.displayName || ct?.display_name || ct?.name || uid;
+                          const resolved = resolveSeenName(uid);
                           return {
                             uid,
-                            name,
-                            url: toLocalMediaUrl(gm?.avatar || ct?.avatar_url || ''),
+                            name: resolved.name || friendlyName,
+                            url: resolved.avatar,
                           };
                         });
                         return (
@@ -3719,18 +3733,12 @@ export default function ChatWindow() {
         if (!seen || !seen.seenUids?.length) return null;
 
         // Lấy thông tin người đã seen
-        const groupCache = useAppStore.getState().groupInfoCache?.[activeAccountId]?.[activeThreadId];
-        const allContacts = contacts[activeAccountId] || [];
+        const seenFriendlyName = getFriendlyUserName((activeContact?.channel || CHANNEL.ZALO) as any);
 
         interface SeenUser { userId: string; name: string; avatar: string; }
         const seenUsers: SeenUser[] = seen.seenUids.map((uid: string) => {
-          // Thử tìm trong group members
-          const member = groupCache?.members?.find((m: any) => m.userId === uid);
-          if (member) return { userId: uid, name: member.displayName || uid, avatar: member.avatar || '' };
-          // Thử tìm trong contacts list
-          const contact = allContacts.find(c => c.contact_id === uid);
-          if (contact) return { userId: uid, name: contact.alias || contact.display_name || uid, avatar: contact.avatar_url || '' };
-          return { userId: uid, name: uid, avatar: '' };
+          const resolved = resolveSeenName(uid);
+          return { userId: uid, name: resolved.name || seenFriendlyName, avatar: resolved.avatar };
         });
 
         const MAX_SHOW = 5;
