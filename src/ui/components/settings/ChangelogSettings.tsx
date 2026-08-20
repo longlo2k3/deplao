@@ -15,6 +15,24 @@ interface VersionEntry {
 // ─── Changelog data - thêm entry mới vào ĐẦU mảng khi có bản cập nhật ────────
 const CHANGELOG: VersionEntry[] = [
   {
+    version: '26.8.5',
+    date: '08/2026',
+    type: 'patch',
+    highlights: [
+      '👀 Đã xem đúng người — Người đã xem tin nhắn hiển thị tên + avatar thật, không còn lộ UUID/ID thô',
+    ],
+    changes: [
+      {
+        category: 'fixed',
+        items: [
+          'Sửa dòng "Tên: Đã xem" trong nhóm hiện raw UUID — tìm tên người xem qua contact/member đúng cách thay vì index sai',
+          'Avatar người đã xem không còn fallback ra ký tự đầu của UUID — dùng ký tự đầu tên thật hoặc tên thân thiện theo channel',
+          'Thanh "Đã xem" cuối khung chat hiển thị tên + avatar đúng, ảnh local được nạp qua toLocalMediaUrl',
+        ],
+      },
+    ],
+  },
+  {
     version: '26.8.4',
     date: '08/2026',
     type: 'patch',

@@ -11,7 +11,7 @@
 
 <br/>
 
-[![Version](https://img.shields.io/badge/version-26.8.4-22c55e?style=for-the-badge&logo=github)](https://github.com/longlo2k3/deplao/releases)
+[![Version](https://img.shields.io/badge/version-26.8.5-22c55e?style=for-the-badge&logo=github)](https://github.com/longlo2k3/deplao/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-3b82f6?style=for-the-badge)](https://github.com/longlo2k3/deplao/releases)
 [![Electron](https://img.shields.io/badge/Electron-v41-47848f?style=for-the-badge&logo=electron&logoColor=white)](https://www.electronjs.org/)
 [![React](https://img.shields.io/badge/React-v18-61dafb?style=for-the-badge&logo=react&logoColor=white)](https://react.dev/)
@@ -40,29 +40,29 @@
 <table>
   <tr>
     <td align="center" width="50%">
-      <a href="https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-Setup-26.8.4.exe">
-        <img src="https://img.shields.io/badge/🪟_Windows_10/11-v26.8.4-0078d4?style=for-the-badge&logo=windows&logoColor=white" alt="Download Windows" /><br/>
-        <sub><strong>Deplao-Setup-26.8.4.exe</strong></sub>
+      <a href="https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-Setup-26.8.5.exe">
+        <img src="https://img.shields.io/badge/🪟_Windows_10/11-v26.8.5-0078d4?style=for-the-badge&logo=windows&logoColor=white" alt="Download Windows" /><br/>
+        <sub><strong>Deplao-Setup-26.8.5.exe</strong></sub>
       </a>
     </td>
     <td align="center" width="50%">
-      <a href="https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-26.8.4-arm64.dmg">
-        <img src="https://img.shields.io/badge/🍎_macOS_Apple_Silicon-v26.8.4-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download macOS Apple Silicon" /><br/>
-        <sub><strong>Deplao-26.8.4-arm64.dmg</strong> (M1 / M2 / M3 / M4)</sub>
+      <a href="https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-26.8.5-arm64.dmg">
+        <img src="https://img.shields.io/badge/🍎_macOS_Apple_Silicon-v26.8.5-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download macOS Apple Silicon" /><br/>
+        <sub><strong>Deplao-26.8.5-arm64.dmg</strong> (M1 / M2 / M3 / M4)</sub>
       </a>
     </td>
   </tr>
   <tr>
     <td align="center" width="50%">
-      <a href="https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-26.8.4.AppImage">
-        <img src="https://img.shields.io/badge/🐧_Ubuntu_Linux-v26.8.4-e95420?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Download Ubuntu Linux" /><br/>
-        <sub><strong>Deplao-26.8.4.AppImage</strong> (Mọi Distro Linux)</sub>
+      <a href="https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-26.8.5.AppImage">
+        <img src="https://img.shields.io/badge/🐧_Ubuntu_Linux-v26.8.5-e95420?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Download Ubuntu Linux" /><br/>
+        <sub><strong>Deplao-26.8.5.AppImage</strong> (Mọi Distro Linux)</sub>
       </a>
     </td>
     <td align="center" width="50%">
-      <a href="https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-26.8.4.dmg">
-        <img src="https://img.shields.io/badge/🍎_macOS_Intel-v26.8.4-555555?style=for-the-badge&logo=apple&logoColor=white" alt="Download macOS Intel" /><br/>
-        <sub><strong>Deplao-26.8.4.dmg</strong> (Chip Intel)</sub>
+      <a href="https://github.com/longlo2k3/deplao/releases/latest/download/Deplao-26.8.5.dmg">
+        <img src="https://img.shields.io/badge/🍎_macOS_Intel-v26.8.5-555555?style=for-the-badge&logo=apple&logoColor=white" alt="Download macOS Intel" /><br/>
+        <sub><strong>Deplao-26.8.5.dmg</strong> (Chip Intel)</sub>
       </a>
     </td>
   </tr>
