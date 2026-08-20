@@ -3191,33 +3191,36 @@ function DonateCoffeePanel() {
           Mọi đóng góp đều được ghi nhận và biết ơn!
         </Paragraph>
         <div className="flex justify-center mt-3">
-          <div className="w-60 h-60 bg-gray-700/60 rounded-2xl border-2 border-dashed border-gray-600 flex flex-col items-center justify-center gap-2 select-none">
-            <svg
-              width="36"
-              height="36"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-gray-400"
-            >
-              <rect x="3" y="3" width="7" height="7" />
-              <rect x="14" y="3" width="7" height="7" />
-              <rect x="14" y="14" width="7" height="7" />
-              <rect x="3" y="14" width="7" height="7" />
-              <line x1="3" y1="10" x2="3" y2="14" />
-              <line x1="21" y1="10" x2="21" y2="14" />
-            </svg>
-            <span className="text-xs text-gray-400">QR Code</span>
-            <span className="text-[10px] text-gray-400 text-center px-4">
+          <div className="w-60 h-60 bg-gray-700/60 rounded-2xl border-2 border-dashed border-gray-600 flex flex-col items-center justify-center gap-2 select-none overflow-hidden p-3">
+            {qrCodeImg ? (
               <img
                 src={qrCodeImg}
                 alt="QR Code"
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain rounded-xl"
               />
-            </span>
+            ) : (
+              <>
+                <svg
+                  width="36"
+                  height="36"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-gray-400"
+                >
+                  <rect x="3" y="3" width="7" height="7" />
+                  <rect x="14" y="3" width="7" height="7" />
+                  <rect x="14" y="14" width="7" height="7" />
+                  <rect x="3" y="14" width="7" height="7" />
+                  <line x1="3" y1="10" x2="3" y2="14" />
+                  <line x1="21" y1="10" x2="21" y2="14" />
+                </svg>
+                <span className="text-xs text-gray-400">QR Code</span>
+              </>
+            )}
           </div>
         </div>
       </Card>
