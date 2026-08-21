@@ -287,6 +287,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     showItemInFolder: (filePath: string) => ipcRenderer.invoke('file:showItemInFolder', filePath),
     saveAs: (params: any) => ipcRenderer.invoke('file:saveAs', params),
     saveTempBlob: (params: any) => ipcRenderer.invoke('file:saveTempBlob', params),
+    downloadUrlToTemp: (params: { url: string; ext?: string; filename?: string }) => ipcRenderer.invoke('file:downloadUrlToTemp', params),
     getVideoMeta: (params: any) => ipcRenderer.invoke('file:getVideoMeta', params),
     readImageAsBase64: (params: { localPath?: string; remoteUrl?: string }) => ipcRenderer.invoke('file:readImageAsBase64', params),
     repairImage: (params: any) => ipcRenderer.invoke('file:repairImage', params),

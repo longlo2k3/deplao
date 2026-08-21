@@ -217,6 +217,39 @@ export function registerFileIpc() {
     });
 
     /**
+     * Download URL (Boss REST hoặc CDN) về file tạm local.
+     * Dùng khi gửi library item mà file không tồn tại trên máy hiện tại
+     * (employee mode / thiếu _localPath). Boss serve /api/library/file/* không cần auth
+     * (HttpRelayService "tunnel security"), mirror MediaCacheService.downloadToCache.
+     */
+    ipcMain.handle('file:downloadUrlToTemp', async (_event, { url, ext, filename }: { url: string; ext?: string; filename?: string }) => {
+        try {
+            if (!url || !/^https?:\/\//i.test(url)) return { success: false, error: 'Invalid url' };
+
+            const response = await net.fetch(url, {
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                signal: AbortSignal.timeout(120000),
+            });
+            if (!response.ok) return { success: false, error: `HTTP ${response.status}` };
+
+            const buffer = Buffer.from(await response.arrayBuffer());
+            const tmpDir = path.join(app.getPath('temp'), 'deplao-library');
+            if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+            const safeName = filename
+                ? `${Date.now()}_${filename.replace(/[^a-zA-Z0-9._-]/g, '_')}`
+                : `lib_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext || 'bin'}`;
+            const filePath = path.join(tmpDir, safeName);
+            fs.writeFileSync(filePath, buffer);
+
+            Logger.log(`[fileIpc] downloadUrlToTemp: ${url.slice(0, 80)} → ${filePath}`);
+            return { success: true, filePath };
+        } catch (error: any) {
+            Logger.error(`[fileIpc] downloadUrlToTemp error: ${error.message}`);
+            return { success: false, error: error.message };
+        }
+    });
+
+    /**
      * Đọc ảnh từ local path hoặc remote URL và trả về base64.
      * Dùng main process để tránh CORS khi fetch remote URL từ renderer.
      */

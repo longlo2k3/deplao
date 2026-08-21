@@ -2319,9 +2319,11 @@ export default function MessageInput() {
     // Bắt đầu thu âm
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+      const mimeType = MediaRecorder.isTypeSupported('audio/mp4')
+        ? 'audio/mp4'
+        : MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : 'audio/webm';
 
       const recorder = new MediaRecorder(stream, { mimeType });
       recordingChunksRef.current = [];
@@ -2364,7 +2366,7 @@ export default function MessageInput() {
             reader.readAsDataURL(blob);
           });
 
-          const ext = mimeType.includes('webm') ? 'webm' : 'ogg';
+          const ext = mimeType.includes('mp4') ? 'm4a' : mimeType.includes('webm') ? 'webm' : 'ogg';
           const saveRes = await ipc.file?.saveTempBlob?.({ base64, ext });
           if (!saveRes?.success || !saveRes?.filePath) {
             showNotification('Lưu file ghi âm tạm thất bại', 'error');
@@ -2372,6 +2374,12 @@ export default function MessageInput() {
           }
 
           const quotePayload = buildQuotePayload(replyTo);
+          // Lấy channel fresh để tránh stale closure (handleVoiceToggle deps thiếu activeContact khi đổi thread FB/TG)
+          const freshContact = useChatStore.getState().contacts[activeAccountId || '']?.find((c: any) => c.contact_id === activeThreadId);
+          const freshAccount = useAccountStore.getState().getActiveAccount?.() as any;
+          const ch = (freshContact as any)?.channel || freshAccount?.channel || activeContact?.channel || CHANNEL.ZALO;
+          // Diagnostic: log channel để xác minh routing (sẽ bỏ sau khi verify)
+          console.log('[Voice] send routing', { ch, freshContactChannel: (freshContact as any)?.channel, accountChannel: freshAccount?.channel, activeContactChannel: activeContact?.channel, threadId: activeThreadId });
           const voiceTempId = generateTempId();
           addMessage(activeAccountId!, activeThreadId, {
             msg_id: voiceTempId, owner_zalo_id: activeAccountId!, thread_id: activeThreadId,
@@ -2381,14 +2389,22 @@ export default function MessageInput() {
           });
           messageQueue.enqueue({
             tempId: voiceTempId, zaloId: activeAccountId!, threadId: activeThreadId,
-            threadType: activeThreadType, channel: 'zalo',
+            threadType: activeThreadType, channel: ch as any,
             sendFn: async () => {
               try {
-                const uploadRes = await ipc.zalo?.uploadVoiceFile?.({ auth, voicePath: saveRes.filePath, threadId: activeThreadId, type: activeThreadType });
-                const voiceUrl: string = uploadRes?.response?.fileUrl || uploadRes?.response?.normalUrl || uploadRes?.response?.hdUrl || uploadRes?.response?.url || uploadRes?.response?.href || '';
-                if (!voiceUrl) return { success: false, error: 'Upload file ghi âm thất bại' };
-                const sendRes = await ipc.zalo?.sendVoice({ auth, options: { voiceUrl }, threadId: activeThreadId, type: activeThreadType, ...(quotePayload ? { quote: quotePayload } : {}) });
-                return { success: true, ...extractMsgIdFromResponse(sendRes, 'zalo') };
+                if (((ch as string) || CHANNEL.ZALO) === CHANNEL.ZALO) {
+                  const uploadRes = await ipc.zalo?.uploadVoiceFile?.({ auth, voicePath: saveRes.filePath, threadId: activeThreadId, type: activeThreadType });
+                  const voiceUrl: string = uploadRes?.fileUrl || uploadRes?.normalUrl || uploadRes?.hdUrl || uploadRes?.url || uploadRes?.href || '';
+                  if (!voiceUrl) return { success: false, error: 'Upload file ghi âm thất bại' };
+                  const sendRes = await ipc.zalo?.sendVoice({ auth, options: { voiceUrl }, threadId: activeThreadId, type: activeThreadType, ...(quotePayload ? { quote: quotePayload } : {}) });
+                  return { success: true, ...extractMsgIdFromResponse(sendRes, ch) };
+                }
+                const res = await channelIpc.sendAttachment(ch as any, {
+                  accountId: activeAccountId!, threadId: activeThreadId, threadType: activeThreadType,
+                  filePath: saveRes.filePath, fileType: 'audio',
+                  ...(quotePayload ? { quote: quotePayload } : {}),
+                });
+                return { success: res?.success ?? false, ...extractMsgIdFromResponse(res, ch), error: res?.error };
               } catch (err: any) { return { success: false, error: err?.message || String(err) }; }
             },
             onSuccess: () => { if (quotePayload) setReplyTo(null); },
@@ -2418,7 +2434,7 @@ export default function MessageInput() {
         showNotification('Không thể bắt đầu ghi âm: ' + err.message, 'error');
       }
     }
-  }, [isRecording, activeThreadId, activeThreadType, getAuth, stopRecording, replyTo]);
+  }, [isRecording, activeThreadId, activeThreadType, activeAccountId, activeContact, getAuth, stopRecording, replyTo]);
 
   // Cleanup recording khi unmount hoặc đổi thread
   useEffect(() => {

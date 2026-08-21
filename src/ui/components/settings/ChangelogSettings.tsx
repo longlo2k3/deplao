@@ -15,6 +15,25 @@ interface VersionEntry {
 // ─── Changelog data - thêm entry mới vào ĐẦU mảng khi có bản cập nhật ────────
 const CHANGELOG: VersionEntry[] = [
   {
+    version: '26.8.6',
+    date: '08/2026',
+    type: 'patch',
+    highlights: [
+      '📎 Sửa gửi media từ Thư viện & 🎤 ghi âm trên mọi kênh — Facebook/Telegram/Zalo đều gửi được (kể cả voice)',
+    ],
+    changes: [
+      {
+        category: 'fixed',
+        items: [
+          'Sửa gửi ảnh/file/video từ Thư viện sang Facebook bị rơi vào nhánh Zalo — điều hướng đúng kênh (Telegram→channelIpc, Facebook→channelIpc/ipc.fb, Zalo→ipc.zalo) + resolve local path qua downloadUrlToTemp cho employee/không có _localPath',
+          'Sửa gửi ghi âm Zalo luôn fail “Tham số không hợp lệ” do ghi dạng webm (EBML) — ưu tiên ghi audio/mp4 → .m4a (AAC, ftyp isom) trên Electron 41/Chromium 146, fallback webm',
+          'Sửa đọc fileUrl voice sai shape (uploadRes.response.fileUrl) — đọc flat uploadRes.fileUrl do zca-js uploadAttachment trả object phẳng',
+          'Sửa ghi âm trên Facebook/Telegram vẫn gọi ipc.zalo do hardcode channel + stale closure — routing theo ch = freshContact?.channel || account?.channel || activeContact?.channel, branch Zalo 2-step / FB-TG via channelIpc.sendAttachment(fileType: audio)',
+        ],
+      },
+    ],
+  },
+  {
     version: '26.8.5',
     date: '08/2026',
     type: 'patch',

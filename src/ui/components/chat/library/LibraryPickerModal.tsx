@@ -27,6 +27,8 @@ import { useAccountStore } from '@/store/accountStore';
 import { messageQueue, generateTempId, extractMsgIdFromResponse } from '@/lib/MessageQueue';
 import { toLocalMediaUrl } from '@/lib/localMedia';
 import { isNonZalo, isTelegramUser, isTelegramBot, CHANNEL } from '@/lib/channelHelper';
+import { useEmployeeStore } from '@/store/employeeStore';
+import { resolveLibraryLocalPath } from '@/lib/libraryMedia';
 import { CloseIcon, EditIcon, FolderIcon, ImageIcon, MonitorIcon, RefreshIcon, SendIcon, StarIcon, TrashIcon } from '@/components/common/icons';
 
 interface LibraryItem {
@@ -363,6 +365,32 @@ export default function LibraryPickerModal({
 
   // ── Send ────────────────────────────────────────────────────
 
+  /** Tải file library về temp local khi không có _localPath trên máy này */
+  const downloadToTemp = useCallback(async (url: string, filename?: string): Promise<string> => {
+    if (!url) return '';
+    const ext = filename?.split('.').pop() || 'bin';
+    const res = await ipc.file?.downloadUrlToTemp?.({ url, ext, filename });
+    return res?.success ? (res.filePath || '') : '';
+  }, []);
+
+  /** Resolve local path khả dụng để gửi (Boss dùng _localPath; employee download Boss→temp) */
+  const resolveItemLocalPath = useCallback(async (item: any): Promise<string> => {
+    const { mode, bossUrl } = useEmployeeStore.getState();
+    return resolveLibraryLocalPath(item, {
+      isEmployee: mode === 'employee',
+      bossUrl: bossUrl || '',
+      download: downloadToTemp,
+    });
+  }, [downloadToTemp]);
+
+  /** Path/URL dùng cho preview attachment (employee: _localPath là path Boss → dùng fileUrl) */
+  const previewValue = useCallback((item: any): string => {
+    const { mode } = useEmployeeStore.getState();
+    return mode === 'employee'
+      ? (item.fileUrl || item._localPath || '')
+      : (item._localPath || item.fileUrl || '');
+  }, []);
+
   /** Lấy auth object từ account hiện tại */
   const getAuthForZaloId = async (): Promise<any> => {
     try {
@@ -387,12 +415,13 @@ export default function LibraryPickerModal({
     const account = useAccountStore.getState().accounts.find(a => a.zalo_id === zaloId);
     const channel = (account as any)?.channel || CHANNEL.ZALO;
     const isTg = isTelegramUser(channel) || isTelegramBot(channel);
+    const isFb = isNonZalo(channel) && !isTg;
     console.log('[Library] sendItem auth:', auth ? 'found' : 'null', 'channel:', channel);
 
     try {
-      const filePath = item._localPath || '';
+      const filePath = await resolveItemLocalPath(item);
       if (!filePath) {
-        console.warn('[Library] sendItem: no local path available');
+        console.warn('[Library] sendItem: no local file path available', { uuid: item.uuid, fileUrl: item.fileUrl });
         return;
       }
 
@@ -401,7 +430,17 @@ export default function LibraryPickerModal({
         if (item.type === 'video') {
           await channelIpc.sendVideo(channel, { accountId: zaloId, threadId, threadType, filePath });
         } else {
-          await channelIpc.sendAttachment(channel, { accountId: zaloId, threadId, threadType, filePath, body: '' });
+          await channelIpc.sendAttachment(channel, { accountId: zaloId, threadId, threadType, filePath, body: '', fileType: item.type === 'image' ? 'image' : 'file' });
+        }
+        return;
+      }
+
+      // Facebook: use channelIpc (delegate to FB adapter)
+      if (isFb) {
+        if (item.type === 'video') {
+          await channelIpc.sendVideo(channel, { accountId: zaloId, threadId, threadType, filePath });
+        } else {
+          await channelIpc.sendAttachment(channel, { accountId: zaloId, threadId, threadType, filePath, body: '', fileType: item.type === 'image' ? 'image' : 'file' });
         }
         return;
       }
@@ -447,7 +486,7 @@ export default function LibraryPickerModal({
     // ── Batch images ──
     if (imageItems.length > 0) {
       const batchTempId = generateTempId();
-      const previewPaths = imageItems.map(i => i._localPath || i.fileUrl || '').filter(Boolean);
+      const previewPaths = imageItems.map(i => previewValue(i)).filter(Boolean);
       const account = useAccountStore.getState().accounts.find(a => a.zalo_id === zaloId);
       const channel = ((account as any)?.channel || CHANNEL.ZALO) as 'zalo' | 'facebook' | 'telegram_bot' | 'telegram_user';
       const isTg = isTelegramUser(channel) || isTelegramBot(channel);
@@ -461,34 +500,45 @@ export default function LibraryPickerModal({
         local_paths: JSON.stringify(previewPaths.reduce((acc, fp, i) => ({ ...acc, [`img${i}`]: fp }), {})),
       });
       const auth = await getAuthForZaloId();
-      const hasLocalPath = imageItems.every(i => i._localPath);
+      const isFb = isNonZalo(channel) && !isTg;
       messageQueue.enqueue({
         tempId: batchTempId, zaloId, threadId, threadType, channel,
         sendFn: async () => {
           try {
+            // Resolve local paths cho mọi ảnh trước khi gửi
+            const paths = await Promise.all(imageItems.map(async i => await resolveItemLocalPath(i)));
+            if (paths.length === 0 || paths.some(p => !p)) {
+              return { success: false, error: 'Không tải được file ảnh từ thư viện' };
+            }
+
             // Telegram: send each image via channelIpc
             if (isTg) {
               let lastMsgId = '';
-              for (const item of imageItems) {
-                const fp = item._localPath || '';
-                if (!fp) continue;
-                const res = await channelIpc.sendAttachment(channel, { accountId: zaloId, threadId, threadType, filePath: fp, body: '' });
+              for (let idx = 0; idx < imageItems.length; idx++) {
+                const res = await channelIpc.sendAttachment(channel, { accountId: zaloId, threadId, threadType, filePath: paths[idx], body: '', fileType: 'image' });
                 if (res?.messageId) lastMsgId = res.messageId;
               }
               return { success: true, msgId: lastMsgId };
             }
+
+            // Facebook: batch attachments qua ipc.fb
+            if (isFb) {
+              const batchRes = await ipc.fb?.sendAttachments({
+                accountId: zaloId, threadId,
+                filePaths: paths,
+                typeChat: threadType === 0 ? 'user' : null,
+              });
+              if (!batchRes?.success) return { success: false, error: batchRes?.error || 'Gửi ảnh Facebook thất bại' };
+              return { success: true, msgId: (batchRes as any)?.messageId };
+            }
+
             // Zalo: existing flow
             if (imageItems.length === 1) {
-              const item = imageItems[0];
-              const opts: any = { auth: auth || {}, zaloId, threadId, threadType };
-              if (item._localPath) opts.filePath = item._localPath;
-              else { opts.fileUrl = item.fileUrl; opts._libraryUuid = item.uuid; }
+              const opts: any = { auth: auth || {}, zaloId, threadId, threadType, filePath: paths[0] };
               const res = await ipc.zalo.sendImage(opts);
               return { success: true, ...extractMsgIdFromResponse(res, 'zalo') };
             } else {
-              const opts: any = { auth: auth || {}, zaloId, threadId, threadType, type: threadType };
-              if (hasLocalPath) opts.filePaths = imageItems.map(i => i._localPath);
-              else { opts.filePaths = imageItems.map(i => i.fileUrl); opts._libraryUuids = imageItems.map(i => i.uuid); }
+              const opts: any = { auth: auth || {}, zaloId, threadId, threadType, type: threadType, filePaths: paths };
               const res = await ipc.zalo.sendImages(opts);
               return { success: true, ...extractMsgIdFromResponse(res, 'zalo') };
             }
@@ -508,10 +558,11 @@ export default function LibraryPickerModal({
     // ── Videos & Files (gửi lẻ qua queue) ──
     for (const item of [...videoItems, ...fileItems]) {
       const tempId = generateTempId();
-      const previewPath = item._localPath || item.fileUrl || '';
+      const previewPath = previewValue(item);
       const itemAccount = useAccountStore.getState().accounts.find(a => a.zalo_id === zaloId);
       const itemChannel = ((itemAccount as any)?.channel || CHANNEL.ZALO) as 'zalo' | 'facebook' | 'telegram_bot' | 'telegram_user';
       const itemIsTg = isTelegramUser(itemChannel) || isTelegramBot(itemChannel);
+      const itemIsFb = isNonZalo(itemChannel) && !itemIsTg;
 
       addMessage(zaloId, threadId, {
         msg_id: tempId, owner_zalo_id: zaloId, thread_id: threadId,
@@ -524,37 +575,43 @@ export default function LibraryPickerModal({
         tempId, zaloId, threadId, threadType, channel: itemChannel,
         sendFn: async () => {
           try {
+            const fp = await resolveItemLocalPath(item);
+            if (!fp) return { success: false, error: 'Không tải được file từ thư viện' };
+
             // Telegram: use channelIpc
             if (itemIsTg) {
-              const fp = item._localPath || '';
-              if (!fp) return { success: false, error: 'No local file path' };
               if (item.type === 'video') {
                 const res = await channelIpc.sendVideo(itemChannel, { accountId: zaloId, threadId, threadType, filePath: fp });
                 return { success: true, ...(res as any) };
               } else {
-                const res = await channelIpc.sendAttachment(itemChannel, { accountId: zaloId, threadId, threadType, filePath: fp, body: '' });
+                const res = await channelIpc.sendAttachment(itemChannel, { accountId: zaloId, threadId, threadType, filePath: fp, body: '', fileType: 'file' });
                 return { success: true, ...(res as any) };
               }
             }
+
+            // Facebook: use channelIpc (delegate to FB adapter)
+            if (itemIsFb) {
+              if (item.type === 'video') {
+                const res = await channelIpc.sendVideo(itemChannel, { accountId: zaloId, threadId, threadType, filePath: fp });
+                return { success: true, ...(res as any) };
+              } else {
+                const res = await channelIpc.sendAttachment(itemChannel, { accountId: zaloId, threadId, threadType, filePath: fp, body: '', fileType: 'file' });
+                return { success: true, ...(res as any) };
+              }
+            }
+
             // Zalo: existing flow
             const auth = await getAuthForZaloId();
             if (item.type === 'video') {
-              if (item._localPath) {
-                const metaRes: any = await ipc.file?.getVideoMeta?.({ filePath: item._localPath }).catch(() => ({})) || {};
-                const res = await channelIpc.sendVideo('zalo', {
-                  auth, accountId: zaloId, threadId, threadType, filePath: item._localPath,
-                  thumbPath: metaRes.thumbPath || '', duration: metaRes.duration || 0,
-                  width: metaRes.width || 0, height: metaRes.height || 0,
-                });
-                return { success: true, ...(res as any) };
-              } else {
-                const res = await ipc.zalo.sendVideo({ auth: auth || {}, zaloId, threadId, threadType, fileUrl: item.fileUrl, _libraryUuid: item.uuid });
-                return { success: true, ...extractMsgIdFromResponse(res, 'zalo') };
-              }
+              const metaRes: any = await ipc.file?.getVideoMeta?.({ filePath: fp }).catch(() => ({})) || {};
+              const res = await channelIpc.sendVideo('zalo', {
+                auth, accountId: zaloId, threadId, threadType, filePath: fp,
+                thumbPath: metaRes.thumbPath || '', duration: metaRes.duration || 0,
+                width: metaRes.width || 0, height: metaRes.height || 0,
+              });
+              return { success: true, ...(res as any) };
             } else {
-              const opts: any = { auth: auth || {}, zaloId, threadId, threadType };
-              if (item._localPath) opts.filePath = item._localPath;
-              else { opts.fileUrl = item.fileUrl; opts._libraryUuid = item.uuid; }
+              const opts: any = { auth: auth || {}, zaloId, threadId, threadType, filePath: fp };
               const res = await ipc.zalo.sendFile(opts);
               return { success: true, ...extractMsgIdFromResponse(res, 'zalo') };
             }
@@ -604,6 +661,7 @@ export default function LibraryPickerModal({
       const account = useAccountStore.getState().accounts.find(a => a.zalo_id === zaloId);
       const channel = ((account as any)?.channel || CHANNEL.ZALO) as any;
       const isTg = isTelegramUser(channel) || isTelegramBot(channel);
+      const isFb = isNonZalo(channel) && !isTg;
 
       const imagePaths: string[] = [];
       const videoPromises: Promise<void>[] = [];
@@ -628,6 +686,15 @@ export default function LibraryPickerModal({
           } else {
             filePromises.push(channelIpc.sendAttachment(channel, { accountId: zaloId, threadId, threadType, filePath, body: '' }).then(() => {}));
           }
+        } else if (isFb) {
+          // Facebook: send via channelIpc (delegate to FB adapter)
+          if (file.type.startsWith('image/')) {
+            imagePaths.push(filePath);
+          } else if (file.type.startsWith('video/')) {
+            videoPromises.push(channelIpc.sendVideo(channel, { accountId: zaloId, threadId, threadType, filePath }).then(() => {}));
+          } else {
+            filePromises.push(channelIpc.sendAttachment(channel, { accountId: zaloId, threadId, threadType, filePath, body: '', fileType: 'file' }).then(() => {}));
+          }
         } else {
           // Zalo: existing flow
           if (file.type.startsWith('image/')) {
@@ -650,18 +717,27 @@ export default function LibraryPickerModal({
         }
       }
 
-      // Phase 2: send images in batch (Zalo only)
-      if (!isTg && imagePaths.length > 0) {
-        if (imagePaths.length === 1) {
-          await ipc.zalo.sendImage({ auth: auth || {}, zaloId, threadId, threadType, filePath: imagePaths[0] });
+      // Phase 2: send images
+      if (imagePaths.length > 0) {
+        if (isTg) {
+          // Telegram: send images one by one
+          for (const fp of imagePaths) {
+            await channelIpc.sendAttachment(channel, { accountId: zaloId, threadId, threadType, filePath: fp, body: '', fileType: 'image' });
+          }
+        } else if (isFb) {
+          // Facebook: batch attachments
+          await ipc.fb?.sendAttachments({
+            accountId: zaloId, threadId,
+            filePaths: imagePaths,
+            typeChat: threadType === 0 ? 'user' : null,
+          });
         } else {
-          await ipc.zalo.sendImages({ auth: auth || {}, zaloId, threadId, type: threadType, filePaths: imagePaths });
-        }
-      }
-      // Telegram: send images one by one
-      if (isTg && imagePaths.length > 0) {
-        for (const fp of imagePaths) {
-          await channelIpc.sendAttachment(channel, { accountId: zaloId, threadId, threadType, filePath: fp, body: '' });
+          // Zalo: batch images
+          if (imagePaths.length === 1) {
+            await ipc.zalo.sendImage({ auth: auth || {}, zaloId, threadId, threadType, filePath: imagePaths[0] });
+          } else {
+            await ipc.zalo.sendImages({ auth: auth || {}, zaloId, threadId, type: threadType, filePaths: imagePaths });
+          }
         }
       }
 
